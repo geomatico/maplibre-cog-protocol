@@ -1,11 +1,25 @@
-const typescript = require('@rollup/plugin-typescript');
+import resolve from '@rollup/plugin-node-resolve';
+import commonjs from '@rollup/plugin-commonjs';
+import typescript from '@rollup/plugin-typescript';
+import terser from '@rollup/plugin-terser';
 
-module.exports = {
-  input: 'src/index.ts',
+const config = {
+  input: 'src/cogProtocol.ts',
   output: {
+    sourcemap: true,
     dir: 'dist',
     format: 'umd',
-    name: 'MaplibreCogProtocol'
+    name: 'cogProtocol',
+    inlineDynamicImports: true,
   },
-  plugins: [typescript({tsconfig: './tsconfig.dist.json'})],
+  plugins: [
+    resolve({ browser: true }),
+    commonjs(),
+    typescript({
+      tsconfig: './tsconfig.dist.json'
+    }),
+    terser(),
+  ],
 };
+
+export default config;
