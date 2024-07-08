@@ -7,7 +7,8 @@
     "lint": "eslint --max-warnings 0 --fix --ext .ts src/",
     "test": "jest --coverage --verbose",
     "test:ci": "jest --runInBand --coverage --verbose",
-    "examples": "live-server examples/ --mount=/dist:./dist"
+    "examples": "live-server examples/ --mount=/dist:./dist",
+    "deploy": "rimraf examples/dist && npm run build && cp -r dist examples && gh-pages -d examples"
   },
   "type": "module",
   "files": [
