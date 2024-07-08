@@ -7,14 +7,13 @@
     "lint": "eslint --max-warnings 0 --fix --ext .ts src/",
     "test": "jest --coverage --verbose",
     "test:ci": "jest --runInBand --coverage --verbose",
-    "start": "live-server examples/ --mount=/dist:./dist"
+    "examples": "live-server examples/ --mount=/dist:./dist"
   },
   "files": [
     "dist"
   ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "type": "module",
   "author": "Geomatico <info@geomatico.es>",
   "devDependencies": {
     "@rollup/plugin-typescript": "^11.1.6",
