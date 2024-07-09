@@ -5,7 +5,7 @@
   <title>Maplibre COG Protocol Example</title>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css">
   <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
-  <script src="dist/cogProtocol.js"></script>
+  <script src="dist/index.js"></script>
   <style>
     html, body, #map {
       margin:0;
@@ -25,7 +25,7 @@
     hash: true
   });
 
-  maplibregl.addProtocol('cog', cogProtocol);
+  maplibregl.addProtocol('cog', MaplibreCOGProtocol.cogProtocol);
 
   map.on('load', () => {
     map.addSource('imageSource', {
