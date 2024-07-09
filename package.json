@@ -1,21 +1,20 @@
 {
-  "name": "maplibre-cog-protocol",
+  "name": "@geomatico/maplibre-cog-protocol",
   "version": "0.0.1",
   "description": "Custom protocol to load Cloud Optimized GeoTIFFs (COG) in Maplibre GL JS",
   "scripts": {
-    "build": "rimraf dist && rollup -c rollup.config.js",
+    "build": "rimraf dist && rollup -c rollup.config.mjs",
     "lint": "eslint --max-warnings 0 --fix --ext .ts src/",
     "test": "jest --coverage --verbose",
     "test:ci": "jest --runInBand --coverage --verbose",
     "examples": "live-server examples/ --mount=/dist:./dist",
     "deploy": "rimraf examples/dist && npm run build && cp -r dist examples && gh-pages -d examples"
   },
-  "type": "module",
   "files": [
     "dist"
   ],
-  "main": "dist/cogProtocol.js",
-  "types": "dist/cogProtocol.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "author": "Geomatico <info@geomatico.es>",
   "devDependencies": {
     "@geomatico/geocomponents": "^3.0.4",

@@ -4,12 +4,12 @@ import typescript from '@rollup/plugin-typescript';
 import terser from '@rollup/plugin-terser';
 
 const config = {
-  input: 'src/cogProtocol.ts',
+  input: 'src/index.ts',
   output: {
     sourcemap: true,
     dir: 'dist',
     format: 'umd',
-    name: 'cogProtocol',
+    name: 'MaplibreCOGProtocol',
     inlineDynamicImports: true,
   },
   plugins: [
@@ -19,7 +19,7 @@ const config = {
       tsconfig: './tsconfig.dist.json'
     }),
     terser(),
-  ],
+  ]
 };
 
 export default config;
