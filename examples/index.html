@@ -2,44 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Maplibre COG Protocol Example</title>
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css">
-  <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
-  <script src="dist/index.js"></script>
-  <style>
-    html, body, #map {
-      margin:0;
-      width: 100%;
-      height: 100%;
-    }
-  </style>
+  <title>Maplibre COG Protocol Examples</title>
+  <link rel="stylesheet" href="vanilla.css">
 </head>
 <body>
-<div id="map"></div>
-<script>
-  let map = new maplibregl.Map({
-    container: 'map',
-    style: 'https://geoserveis.icgc.cat/contextmaps/icgc_orto_hibrida.json',
-    center: [0.501427, 41.656126],
-    zoom: 16,
-    hash: true
-  });
+<h1>Maplibre COG Protocol</h1>
+<h2>Examples</h2>
+<ul>
+  <li><a href="image.html">RGB Image example</a></li>
+  <li><a href="color-ramp.html">Color Ramp example</a></li>
+  <li><a href="https://labs.geomatico.es/maplibre-cog-protocol-examples/">Advanced Viewer</a></li></li>
+</ul>
 
-  maplibregl.addProtocol('cog', MaplibreCOGProtocol.cogProtocol);
+<h2>Resources</h2>
+<ul>
+  <li><a href="http://github.com/geomatico/maplibre-cog-protocol">GitHub repository</a></li>
+</ul>
 
-  map.on('load', () => {
-    map.addSource('imageSource', {
-      type: 'raster',
-      url: 'cog://./kriging-cog.tif#color:BrewerSpectral9,1.7084054885838,1.7919403772937',
-    });
-
-    map.addLayer({
-      source: 'imageSource',
-      id: 'imageLayer',
-      type: 'raster'
-    });
-  });
-
-</script>
 </body>
 </html>
