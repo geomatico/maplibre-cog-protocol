@@ -2,7 +2,7 @@ import {Pool, fromUrl, GeoTIFF} from 'geotiff';
 import {RequestParameters} from 'maplibre-gl';
 
 import {computeSamples, toRGB} from './readRGB';
-import useColorRamp from '@geomatico/geocomponents/hooks/useColorRamp'; // TODO sacar de geocomponents
+import {colorInterpolator} from './colorInterpolator';
 
 /**
  * transform x/y/z to webmercator-bbox
@@ -100,8 +100,12 @@ const parseTile = async (url: string, abortController: AbortController) => {
       if(!colorParams) {
         throw('Color params are not defined');
       } else {
-        const [colorScheme, min, max, neg] = colorParams.split(',');
-        const colorInterpolator = useColorRamp(colorScheme, [min, max].map(parseFloat), !!neg).d3ScaleInt;
+        const [colorScheme, minStr, maxStr, modifiers] = colorParams.split(',');
+        const min = parseFloat(minStr),
+              max = parseFloat(maxStr),
+              isReverse = modifiers?.includes('-') || false,
+              isContinuous = modifiers?.includes('c') || false;
+        const interpolate = colorInterpolator({colorScheme, min, max, isReverse, isContinuous});
         for (let i = 0; i < pixels; i++) {
           const px = offset + (readRasterResult[i] as number) * scale;
           if (isNaN(px) || readRasterResult[i] === Infinity || px === noData) {
@@ -110,7 +114,7 @@ const parseTile = async (url: string, abortController: AbortController) => {
             rgba[4 * i + 2] = 0;
             rgba[4 * i + 3] = 0;
           } else {
-            const color = colorInterpolator(px);
+            const color = interpolate(px);
             rgba[4 * i] = color[0];
             rgba[4 * i + 1] = color[1];
             rgba[4 * i + 2] = color[2];

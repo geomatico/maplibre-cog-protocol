@@ -26,18 +26,6 @@ docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdalwarp /srv/<s
 docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdalwarp /srv/<source>.tif /srv/<target>.tiff -of COG -co BLOCKSIZE=256 -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=DEFLATE -co RESAMPLING=BILINEAR -co OVERVIEWS=IGNORE_EXISTING -co ADD_ALPHA=NO -dstnodata NaN
 ```
 
-
-## Usage
-
-See the [self-documented examples](https://labs.geomatico.es/maplibre-cog-protocol-examples).
-
-* COGs with three 8-bit bands will be displayed as RGB images.
-* COGs with a single band can be used:
-  * As an image, applying any color ramp from ColorBrewer or Carto Colors.
-  * As a DEM for hillshading (source type="raster-dem").
-  * As a DEM for 3D terrain (source type="raster-dem").
-
-
 ## Application examples
 
 ### Vanilla HTML & JS
@@ -101,6 +89,104 @@ const App = () =>
     </Source>
   </Map>;
 ```
+
+
+## API
+
+See the [self-documented examples](https://labs.geomatico.es/maplibre-cog-protocol-examples).
+
+### Display RGB image COGs
+
+COGs with three or four 8-bit bands can be displayed as RGB or RGBA images.
+
+* Use a `raster` source with the url prepended with `cog://`
+* Use a `raster` layer.
+
+```javascript
+  map.addSource('sourceId', {
+    type: 'raster',
+    url: 'cog://https://labs.geomatico.es/maplibre-cog-protocol/data/image.tif',
+  });
+
+  map.addLayer({
+    id: 'imageId',
+    source: 'sourceId',
+    type: 'raster'
+  });
+```
+
+### Display Digital Elevation Model COGs
+
+COGs with a single band can be interpreted DEMs.
+
+#### As Hillshading
+
+* Use a `raster-dem` source with the url prepended with `cog://` and appended with `#dem`
+* Use a `hillshade` layer.
+
+```javascript
+  map.addSource('sourceId', {
+    type: 'raster-dem',
+    url: 'cog://cog://https://cdn.geomatico.es/pirineo_dem_cog_256.tif#dem',
+  });
+
+  map.addLayer({
+    id: 'hillshadeId',
+    source: 'sourceId',
+    type: 'hillshade'
+  });
+```
+
+#### As 3D Terrain
+
+* Use a `raster-dem` source with the url prepended with `cog://` and appended with `#dem`, same as above.
+* Set it as the terrain.
+
+```javascript
+  map.addSource('sourceId', {
+    type: 'raster-dem',
+    url: 'cog://cog://https://cdn.geomatico.es/pirineo_dem_cog_256.tif#dem',
+  });
+
+  map.setTerrain({
+    source: 'sourceId'
+  });
+```
+
+
+### Apply a color ramp to a single band COG
+
+COGs with a single band can be also converted to images applying a color ramp.
+
+* Use a `raster` source with the url prepended with `cog://` and appended with `#color:` and the color ramp specification.
+* Use a `raster` layer.
+
+```javascript
+  map.addSource('sourceId', {
+    type: 'raster',
+    url: 'cog://https://labs.geomatico.es/maplibre-cog-protocol/data/kriging#color:BrewerSpectral9,1.7,1.8,c',
+  });
+
+  map.addLayer({
+    id: 'imageId',
+    source: 'sourceId',
+    type: 'raster'
+  });
+```
+
+The color ramp specification consists of the following comma-separated values:
+
+```
+#color:<colorScheme>,<min>,<max>,<options>
+```
+
+* `colorScheme`: Any of the [Color Brewer](https://colorbrewer2.org/) or [CARTOColors](https://carto.com/carto-colors/) schemes are available. See [the Color Ramp cheatsheet](https://labs.geomatico.es/maplibre-cog-protocol/colors.html).
+* `min`: A number indicating the minimal value where the color ramp applies.
+* `max`: A number indicating the maximal value where the color ramp applies.
+* `options` (optional):
+  * add a `-` to apply the reversed scheme (for instance, converts red-to-gren => green-to-red).
+  * add a `c` to apply a continuous color scale (linear interpolation).
+
 
 ## [dev] Releasing a new version
 
