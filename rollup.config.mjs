@@ -12,13 +12,22 @@ const config = {
     name: 'MaplibreCOGProtocol',
     inlineDynamicImports: true,
   },
+  /*external: [
+    'geotiff'
+  ],*/
   plugins: [
-    resolve({ browser: true }),
+    resolve({
+      browser: true
+    }),
     commonjs(),
     typescript({
-      tsconfig: './tsconfig.dist.json'
+      tsconfig: './tsconfig.json'
     }),
-    terser(),
+    ...process.env.DEV ? [
+
+    ] : [
+      terser()
+    ],
   ]
 };
 
