@@ -1,8 +1,0 @@
-{
-  "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "declaration": true,
-    "module": "es2022",
-    "outDir": "dist",
-  },
-}

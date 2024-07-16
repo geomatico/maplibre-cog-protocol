@@ -49,7 +49,7 @@ const parseTile = async (url: string, abortController: AbortController) => {
   const offset = sampleGdalMetadata?.OFFSET !== undefined ? parseFloat(sampleGdalMetadata.OFFSET) : 0.0;
   const scale = sampleGdalMetadata?.SCALE !== undefined ? parseFloat(sampleGdalMetadata.SCALE) : 1.0;
   const noData = image.getGDALNoData() ?? undefined;
-  const fillValue = noData !== undefined ? (noData - offset) / scale :  undefined;
+  const fillValue = noData === undefined || isNaN(noData) ? Infinity : (noData - offset) / scale;
   const samples = computeSamples(image.fileDirectory, true);
   const readRasterResult = await tiff.readRasters({
     bbox,
@@ -104,14 +104,13 @@ const parseTile = async (url: string, abortController: AbortController) => {
         const colorInterpolator = useColorRamp(colorScheme, [min, max].map(parseFloat), !!neg).d3ScaleInt;
         for (let i = 0; i < pixels; i++) {
           const px = offset + (readRasterResult[i] as number) * scale;
-          if (isNaN(px) || px === 0) {
+          if (isNaN(px) || readRasterResult[i] === Infinity || px === noData) {
             rgba[4 * i] = 0;
             rgba[4 * i + 1] = 0;
             rgba[4 * i + 2] = 0;
             rgba[4 * i + 3] = 0;
           } else {
             const color = colorInterpolator(px);
-            if (color === undefined) console.log(px, color);
             rgba[4 * i] = color[0];
             rgba[4 * i + 1] = color[1];
             rgba[4 * i + 2] = color[2];
