@@ -1,2 +1,3 @@
 import cogProtocol from '@/cogProtocol';
-export { cogProtocol };
+import { colorInterpolator, colorSchemeNames } from '@/colorInterpolator';
+export { cogProtocol, colorInterpolator, colorSchemeNames };
