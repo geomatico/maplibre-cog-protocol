@@ -327,7 +327,7 @@ const thresholds = (min: number, max: number, n: number): Array<number> =>
     min + (i + 1) * (max - min) / n
   );
 
-type ColorInterpolatorParams = {
+type ColorScaleParams = {
   colorScheme: string,
   min: number,
   max: number,
@@ -335,14 +335,14 @@ type ColorInterpolatorParams = {
   isContinuous?: boolean
 }
 
-const colorInterpolator = ({colorScheme, min, max, isReverse = false, isContinuous = false}: ColorInterpolatorParams) => {
+const colorScale = ({colorScheme, min, max, isReverse = false, isContinuous = false}: ColorScaleParams) => {
   if (isValidColorSchemeName(colorScheme)) {
     const colors = COLOR_SCHEMES[colorScheme].map(hexToIntColor);
     const range = isReverse ? colors.reverse() : colors;
 
     if (isContinuous) {
       const domain = intervals(min, max, range.length);
-      return scaleLinear(domain, range);
+      return scaleLinear(domain, range).clamp(true);
     } else {
       const domain = thresholds(min, max, range.length);
       return scaleThreshold(domain, range);
@@ -352,4 +352,4 @@ const colorInterpolator = ({colorScheme, min, max, isReverse = false, isContinuo
   }
 }
 
-export {colorInterpolator, colorSchemeNames};
+export {colorScale, colorSchemeNames};

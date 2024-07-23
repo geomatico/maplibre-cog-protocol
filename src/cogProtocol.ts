@@ -2,7 +2,7 @@ import {Pool, fromUrl, GeoTIFF} from 'geotiff';
 import {RequestParameters} from 'maplibre-gl';
 
 import {computeSamples, toRGB} from './readRGB';
-import {colorInterpolator} from './colorInterpolator';
+import {colorScale} from './colorScale';
 
 /**
  * transform x/y/z to webmercator-bbox
@@ -105,7 +105,7 @@ const parseTile = async (url: string, abortController: AbortController) => {
               max = parseFloat(maxStr),
               isReverse = modifiers?.includes('-') || false,
               isContinuous = modifiers?.includes('c') || false;
-        const interpolate = colorInterpolator({colorScheme, min, max, isReverse, isContinuous});
+        const interpolate = colorScale({colorScheme, min, max, isReverse, isContinuous});
         for (let i = 0; i < pixels; i++) {
           const px = offset + (readRasterResult[i] as number) * scale;
           if (isNaN(px) || readRasterResult[i] === Infinity || px === noData) {

@@ -1,4 +1,4 @@
-import cogProtocol from '@/cogProtocol';
-import {colorInterpolator, colorSchemeNames} from '@/colorInterpolator';
+import cogProtocol from './cogProtocol';
+import {colorScale, colorSchemeNames} from './colorScale';
 
-export {cogProtocol, colorInterpolator, colorSchemeNames};
+export {cogProtocol, colorScale, colorSchemeNames};
