@@ -49,8 +49,9 @@ const parseTile = async (url: string, abortController: AbortController) => {
   const offset = sampleGdalMetadata?.OFFSET !== undefined ? parseFloat(sampleGdalMetadata.OFFSET) : 0.0;
   const scale = sampleGdalMetadata?.SCALE !== undefined ? parseFloat(sampleGdalMetadata.SCALE) : 1.0;
   const noData = image.getGDALNoData() ?? undefined;
-  const fillValue = noData === undefined || isNaN(noData) ? Infinity : (noData - offset) / scale;
+  const fillValue = noData === undefined || isNaN(noData) ? Infinity : (noData - offset) / scale; // FillValue won't accept NaN, use Infinity as a default
   const samples = computeSamples(image.fileDirectory, true);
+
   const readRasterResult = await tiff.readRasters({
     bbox,
     width: tileSize,
@@ -59,7 +60,7 @@ const parseTile = async (url: string, abortController: AbortController) => {
     interleave: true,
     pool,
     signal,
-    fillValue
+    fillValue // When fillValue is Infinity, integer types will be filled with a 0 value.
   });
 
   const pixels = tileSize * tileSize;
@@ -69,15 +70,17 @@ const parseTile = async (url: string, abortController: AbortController) => {
   if (!hash) {
     //*** This converts any image to rgb and then assigns transparent pixels to NODATA triplets ***//
     const rgb = toRGB(readRasterResult, image.fileDirectory);
+
+    // TODO black pixels are not always fillValues. A robust implementation would be a variant of Image.readRGB generating directly the RGBA values and fillValue totally transparent.
+    const transparentValue = noData ?? 0;
     for (let i = 0; i < pixels; i++) {
       rgba[4 * i] = rgb[3 * i];
       rgba[4 * i + 1] = rgb[3 * i + 1];
       rgba[4 * i + 2] = rgb[3 * i + 2];
-      rgba[4 * i + 3] = rgb[3 * i] === 0 && rgb[3 * i +1] === 135 && rgb[3 * i +2] === 0 ?
-        0 :
-        readRasterResult[3 * i] === fillValue && readRasterResult[3 * i + 1] === fillValue && readRasterResult[3 * i + 2] === fillValue ?
-          0 :
-          255;
+      rgba[4 * i + 3] =
+        readRasterResult[3 * i] === transparentValue &&
+        readRasterResult[3 * i + 1] === transparentValue &&
+        readRasterResult[3 * i + 2] === transparentValue ? 0 : 255;
     }
   } else {
     if (hash.startsWith('dem')) {
@@ -108,7 +111,7 @@ const parseTile = async (url: string, abortController: AbortController) => {
         const interpolate = colorScale({colorScheme, min, max, isReverse, isContinuous});
         for (let i = 0; i < pixels; i++) {
           const px = offset + (readRasterResult[i] as number) * scale;
-          if (isNaN(px) || readRasterResult[i] === Infinity || px === noData) {
+          if (px === noData || isNaN(px) || px === Infinity) {
             rgba[4 * i] = 0;
             rgba[4 * i + 1] = 0;
             rgba[4 * i + 2] = 0;
@@ -132,6 +135,7 @@ const parseTile = async (url: string, abortController: AbortController) => {
   );
 
   const imageBitmap = await createImageBitmap(imageData);
+
   return {
     data: imageBitmap,
 

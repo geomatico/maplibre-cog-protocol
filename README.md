@@ -188,7 +188,9 @@ The color ramp specification consists of the following comma-separated values:
   * add a `c` to apply a continuous color scale (linear interpolation).
 
 
-## [dev] Releasing a new version
+## For developers
+
+### Releasing a new version
 
 ```
 npm version [patch | minor | major]
@@ -197,3 +199,17 @@ npm run build
 npm pack
 npm publish --access public
 ```
+
+### Roadmap
+
+Robustness and efficiency:
+
+1. [ ] Improve handling of NaNs, NO_DATA, masks + single-pass generation of RGBA ImageData
+2. [ ] Get the exact tile from COG, improve cache and concurrency
+3. [ ] Usage of web workers
+
+Desire list:
+
+1. [ ] Get pixel info on mouse hover/click/tap
+2. [ ] Raster algebra on multiband geotiffs
+3. [ ] Integrate maplibre-contour
