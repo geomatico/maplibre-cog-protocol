@@ -213,3 +213,5 @@ const cogProtocol = async (params: RequestParameters, abortController: AbortCont
 };
 
 export default cogProtocol;
+
+export const teardown = () => pool.destroy();

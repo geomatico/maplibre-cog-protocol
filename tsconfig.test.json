@@ -1,6 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    "allowJs": true,
     "rootDirs": ["./src","./test"],
     "strict": false,
     "strictPropertyInitialization": false,
