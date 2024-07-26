@@ -17,16 +17,16 @@
 <h1>Color Ramp cheatsheet</h1>
 <div id="colorSchemes"></div>
 <script>
-  const {colorInterpolator, colorSchemeNames} = MaplibreCOGProtocol;
+  const {colorScale, colorSchemeNames} = MaplibreCOGProtocol;
 
   const rows = colorSchemeNames.map(colorScheme => {
-    const interpolateDisc = colorInterpolator({colorScheme, min: 0,max: 230});
+    const interpolateDisc = colorScale({colorScheme, min: 0,max: 230});
     const discreteRamp = Array.from({length: 231}, (x, i) => {
       const [r, g, b] = interpolateDisc(i);
       return `<span class="colorItem" style="background: rgb(${r}, ${g}, ${b})"></span>`;
     }).join('');
 
-    const interpolateCont = colorInterpolator({colorScheme, min: 0, max: 230, isContinuous: true});
+    const interpolateCont = colorScale({colorScheme, min: 0, max: 230, isContinuous: true});
     const continuousRamp = Array.from({length: 231}, (x, i) => {
       const [r, g, b] = interpolateCont(i);
       return `<span class="colorItem" style="background: rgb(${r}, ${g}, ${b})"></span>`;
