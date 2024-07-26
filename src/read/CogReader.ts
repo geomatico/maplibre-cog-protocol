@@ -10,9 +10,9 @@ import {
 
 
 let pool: Pool;
-let geoTiffCache: Record<string, Promise<GeoTIFF>> = {};
-let metadataCache: Record<string, Promise<CogMetadata>> = {};
-let tileCache: Record<string, Promise<TypedArray[]>> = {};
+const geoTiffCache: Record<string, Promise<GeoTIFF>> = {};
+const metadataCache: Record<string, Promise<CogMetadata>> = {};
+const tileCache: Record<string, Promise<TypedArray[]>> = {};
 
 const CogReader = (url: string) => {
   if (pool === undefined) {
