@@ -17,16 +17,18 @@ Sample GDAL commands (using docker for convenience, but not needed):
 #### RGB Image (lossy compression)
 
 ```bash
-docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdalwarp /srv/<source>.tif /srv/<target>.tif -of COG -co BLOCKSIZE=256 -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=JPEG -co OVERVIEWS=IGNORE_EXISTING -co ADD_ALPHA=NO -dstnodata NaN
+docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdalwarp /srv/<source>.tif /srv/<target>.tif -of COG -co BLOCKSIZE=256 -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=JPEG -co OVERVIEWS=IGNORE_EXISTING -co ADD_ALPHA=NO -co ALIGNED_LEVELS=10 -dstnodata NaN
 ```
 
 #### Digital Elevation Model
 
 ```bash
-docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdalwarp /srv/<source>.tif /srv/<target>.tiff -of COG -co BLOCKSIZE=256 -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=DEFLATE -co RESAMPLING=BILINEAR -co OVERVIEWS=IGNORE_EXISTING -co ADD_ALPHA=NO -dstnodata NaN
+docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdalwarp /srv/<source>.tif /srv/<target>.tiff -of COG -co BLOCKSIZE=256 -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=DEFLATE -co RESAMPLING=BILINEAR -co OVERVIEWS=IGNORE_EXISTING -co ADD_ALPHA=NO -co ALIGNED_LEVELS=10 -dstnodata NaN
 ```
 
 ## Application examples
+
+For better quality, use always `tileSize: 256` to match the size of tiles delivered by the custom protocol.
 
 ### Vanilla HTML & JS
 
@@ -54,6 +56,7 @@ docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdalwarp /srv/<s
     map.addSource('imageSource', {
       type: 'raster',
       url: 'cog://https://labs.geomatico.es/maplibre-cog-protocol/data/image.tif',
+      tileSize: 256
     });
 
     map.addLayer({
@@ -84,7 +87,7 @@ const App = () =>
     mapStyle="https://geoserveis.icgc.cat/contextmaps/icgc_mapa_base_gris_simplificat.json"
     initialViewState={{longitude: 1.83369, latitude: 41.5937, zoom: 14}}
   >
-    <Source id="imageSource" type="raster" url="cog://https://labs.geomatico.es/maplibre-cog-protocol/data/image.tif">
+    <Source id="imageSource" type="raster" url="cog://https://labs.geomatico.es/maplibre-cog-protocol/data/image.tif" tileSize={256}>
       <Layer id="imageLayer" type="raster"/>
     </Source>
   </Map>;
@@ -188,7 +191,9 @@ The color ramp specification consists of the following comma-separated values:
   * add a `c` to apply a continuous color scale (linear interpolation).
 
 
-## [dev] Releasing a new version
+## For developers
+
+### Releasing a new version
 
 ```
 npm version [patch | minor | major]
@@ -197,3 +202,18 @@ npm run build
 npm pack
 npm publish --access public
 ```
+
+### Roadmap
+
+Required for robustness and efficiency:
+
+1. [x] Refactor & testing
+2. [x] Single-pass generation of RGBA ImageData
+3. [x] Use raw tile cache: improves efficiency and concurrency
+4. [ ] Apply transparency mask if present (now taking 0 as the default noData)
+
+New features wishlist:
+
+1. [ ] Get raw pixel values on mouse hover/click/tap
+2. [ ] Raster algebra for multiband GeoTIFFs
+3. [ ] Integrate maplibre-contour

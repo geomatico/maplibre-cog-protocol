@@ -7,7 +7,7 @@
     "watch:examples": "five-server",
     "watch": "concurrently --names 'SRC,EXAMPLES' --prefix-colors 'yellow,blue' --kill-others 'npm run watch:src' 'npm run watch:examples'",
     "lint": "eslint --max-warnings 0 --fix src/",
-    "test": "jest --coverage --verbose",
+    "test": "jest --coverage --verbose --runInBand",
     "test:ci": "jest --runInBand --coverage --verbose",
     "build": "npm run lint && npm run test && rimraf dist && rollup -c rollup.config.mjs",
     "deploy": "rimraf examples/dist && npm run build && cp -r dist examples && gh-pages -d examples"
@@ -20,12 +20,14 @@
   "author": "Geomatico <info@geomatico.es>",
   "devDependencies": {
     "@eslint/js": "^9.7.0",
+    "@mapbox/sphericalmercator": "^1.2.0",
     "@rollup/plugin-commonjs": "^26.0.1",
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^11.1.6",
     "@types/d3-scale": "^4.0.8",
     "@types/jest": "^29.5.12",
+    "@types/mapbox__sphericalmercator": "^1.2.3",
     "@typescript-eslint/eslint-plugin": "^7.15.0",
     "@typescript-eslint/parser": "^7.16.1",
     "concurrently": "^8.2.2",
