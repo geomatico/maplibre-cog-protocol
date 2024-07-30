@@ -3,30 +3,11 @@
 Custom protocol to load Cloud Optimized GeoTIFFs (COG) in Maplibre GL JS
 
 
-## COG generation tips
+## Demo page
 
-COG should be in EPSG:3857 (Google Mercator) projection, as this library doesn't reproject and won't understand any other projection.
+**https://labs.geomatico.es/maplibre-cog-protocol**
 
-For better performance, use the Google Maps tiling scheme with 256x256 blocksize.
-
-For RGB images, JPEG yCbCr (lossy) compression is recommended.
-For lossless compression, deflate gives good decoding performance on the browser.
-
-Sample GDAL commands (using docker for convenience, but not needed):
-
-#### RGB Image (lossy compression)
-
-```bash
-docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdalwarp /srv/<source>.tif /srv/<target>.tif -of COG -co BLOCKSIZE=256 -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=JPEG -co OVERVIEWS=IGNORE_EXISTING -co ADD_ALPHA=NO -co ALIGNED_LEVELS=10 -dstnodata NaN
-```
-
-#### Digital Elevation Model
-
-```bash
-docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdalwarp /srv/<source>.tif /srv/<target>.tiff -of COG -co BLOCKSIZE=256 -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=DEFLATE -co RESAMPLING=BILINEAR -co OVERVIEWS=IGNORE_EXISTING -co ADD_ALPHA=NO -co ALIGNED_LEVELS=10 -dstnodata NaN
-```
-
-## Application examples
+## Usage
 
 For better quality, use always `tileSize: 256` to match the size of tiles delivered by the custom protocol.
 
@@ -95,8 +76,6 @@ const App = () =>
 
 
 ## API
-
-See the [self-documented examples](https://labs.geomatico.es/maplibre-cog-protocol-examples).
 
 ### Display RGB image COGs
 
@@ -191,15 +170,37 @@ The color ramp specification consists of the following comma-separated values:
   * add a `c` to apply a continuous color scale (linear interpolation).
 
 
+## COG generation tips
+
+COG should be in EPSG:3857 (Google Mercator) projection, as this library doesn't reproject and won't understand any other projection.
+
+For better performance, use the Google Maps tiling scheme with 256x256 blocksize.
+
+For RGB images, JPEG yCbCr (lossy) compression is recommended.
+For lossless compression, deflate gives good decoding performance on the browser.
+
+Sample GDAL commands (using docker for convenience, but not needed):
+
+#### RGB Image (lossy compression)
+
+```bash
+docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdalwarp /srv/<source>.tif /srv/<target>.tif -of COG -co BLOCKSIZE=256 -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=JPEG -co OVERVIEWS=IGNORE_EXISTING -co ADD_ALPHA=NO -co ALIGNED_LEVELS=10 -dstnodata NaN
+```
+
+#### Digital Elevation Model
+
+```bash
+docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdalwarp /srv/<source>.tif /srv/<target>.tiff -of COG -co BLOCKSIZE=256 -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=DEFLATE -co RESAMPLING=BILINEAR -co OVERVIEWS=IGNORE_EXISTING -co ADD_ALPHA=NO -co ALIGNED_LEVELS=10 -dstnodata NaN
+```
+
 ## For developers
 
-### Releasing a new version
+### Making a new release
 
 ```
 npm version [patch | minor | major]
 
 npm run build
-npm pack
 npm publish --access public
 ```
 
@@ -210,7 +211,8 @@ Required for robustness and efficiency:
 1. [x] Refactor & testing
 2. [x] Single-pass generation of RGBA ImageData
 3. [x] Use raw tile cache: improves efficiency and concurrency
-4. [ ] Apply transparency mask if present (now taking 0 as the default noData)
+4. [ ] Add a limit to the cache (now increases indefinitely) 
+5. [ ] Apply transparency mask if present (now taking 0 as the default noData)
 
 New features wishlist:
 
