@@ -202,6 +202,9 @@ npm version [patch | minor | major]
 
 npm run build
 npm publish --access public
+
+git tag vX.X.X
+git push origin tag vX.X.X
 ```
 
 ### Roadmap
