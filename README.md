@@ -214,7 +214,7 @@ Required for robustness and efficiency:
 1. [x] Refactor & testing
 2. [x] Single-pass generation of RGBA ImageData
 3. [x] Use raw tile cache: improves efficiency and concurrency
-4. [ ] Add a limit to the cache (now increases indefinitely) 
+4. [x] Add a limit to the cache (now increases indefinitely)
 5. [ ] Apply transparency mask if present (now taking 0 as the default noData)
 
 New features wishlist:

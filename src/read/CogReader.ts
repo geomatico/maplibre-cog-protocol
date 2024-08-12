@@ -1,31 +1,43 @@
 import {fromUrl, GeoTIFF, Pool} from 'geotiff';
+import QuickLRU from 'quick-lru';
 
 import {Bbox, CogMetadata, ImageMetadata, TileIndex, TileJSON, TypedArray} from '@/types';
-
 import {
   mercatorBboxToGeographicBbox,
   tileIndexToMercatorBbox,
   zoomFromResolution
 } from '@/read/math';
 
+const ONE_HOUR_IN_MILLISECONDS = 60 * 60 * 1000;
 
 let pool: Pool;
-const geoTiffCache: Record<string, Promise<GeoTIFF>> = {};
-const metadataCache: Record<string, Promise<CogMetadata>> = {};
-const tileCache: Record<string, Promise<TypedArray[]>> = {};
+
+const geoTiffCache = new QuickLRU<string, Promise<GeoTIFF>>({maxSize: 16, maxAge: ONE_HOUR_IN_MILLISECONDS});
+const metadataCache = new QuickLRU<string, Promise<CogMetadata>>({maxSize: 16, maxAge: ONE_HOUR_IN_MILLISECONDS});
+const tileCache = new QuickLRU<string, Promise<TypedArray[]>>({maxSize: 1024, maxAge: ONE_HOUR_IN_MILLISECONDS});
 
 const CogReader = (url: string) => {
   if (pool === undefined) {
     pool = new Pool();
   }
 
-  if (!geoTiffCache[url]) {
-    geoTiffCache[url] = fromUrl(url);
+  const getGeoTiff = (url: string): Promise<GeoTIFF> => {
+    const cachedGeoTiff = geoTiffCache.get(url);
+    if (cachedGeoTiff) {
+      return cachedGeoTiff;
+    } else {
+      const geoTiff = fromUrl(url);
+      geoTiffCache.set(url, geoTiff);
+      return geoTiff;
+    }
   }
 
   const getMetadata = async (): Promise<CogMetadata> => {
-    if (!metadataCache[url]) {
-      const tiff = await geoTiffCache[url];
+    const cachedMetadata = metadataCache.get(url);
+    if (cachedMetadata) {
+      return cachedMetadata;
+    } else {
+      const tiff = await getGeoTiff(url);
       const firstImage = await tiff.getImage();
       const gdalMetadata = firstImage.getGDALMetadata(0); // Metadata for first image and first sample
       const fileDirectory = firstImage.fileDirectory;
@@ -42,8 +54,7 @@ const CogReader = (url: string) => {
         imagesMetadata.push({zoom, isOverview, isMask});
       }
 
-      metadataCache[url] = {
-        // @ts-expect-error this will be wrapped with a Promise
+      const metadata = {
         offset: gdalMetadata?.OFFSET !== undefined ? parseFloat(gdalMetadata.OFFSET) : 0.0,
         scale: gdalMetadata?.SCALE !== undefined ? parseFloat(gdalMetadata.SCALE) : 1.0,
         noData: firstImage.getGDALNoData() ?? undefined,
@@ -53,10 +64,13 @@ const CogReader = (url: string) => {
         artist: artist,
         bbox: bbox,
         images: imagesMetadata
-      };
-    }
+      }
 
-    return metadataCache[url];
+      // @ts-expect-error metadata will be wrapped with a Promise
+      metadataCache.set(url, metadata);
+
+      return metadata;
+    }
   };
 
   const getTilejson = async (fullUrl: string): Promise<TileJSON> => {
@@ -76,8 +90,11 @@ const CogReader = (url: string) => {
 
   const getRawTile = async ({z, x, y}: TileIndex, tileSize: number = 256): Promise<TypedArray[]> => {
     const key = `${url}/${tileSize}/${z}/${x}/${y}`;
-    if (!tileCache[key]) {
-      const tiff = await geoTiffCache[url];
+    const cachedTile = tileCache.get(key);
+    if (cachedTile) {
+      return cachedTile;
+    } else {
+      const tiff = await getGeoTiff(url);
       const {noData} = await getMetadata();
 
       // FillValue won't accept NaN.
@@ -85,7 +102,7 @@ const CogReader = (url: string) => {
       // Int and Uint arrays will be filled with zeroes.
       const fillValue = noData === undefined || isNaN(noData) ? Infinity : noData;
 
-      tileCache[key] = tiff.readRasters({
+      const tile = tiff.readRasters({
         bbox: tileIndexToMercatorBbox({x, y, z}),
         width: tileSize,
         height: tileSize,
@@ -93,10 +110,11 @@ const CogReader = (url: string) => {
         resampleMethod: 'nearest',
         pool,
         fillValue // When fillValue is Infinity, integer types will be filled with a 0 value.
-      }) as Promise<TypedArray[]>;
-    }
+      }) as Promise<TypedArray[]>; // ReadRasterResult extends TypedArray[]
 
-    return tileCache[key];
+      tileCache.set(key, tile);
+      return tile;
+    }
   };
 
   return {getTilejson, getMetadata, getRawTile};
