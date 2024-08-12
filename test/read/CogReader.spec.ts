@@ -64,8 +64,8 @@ describe('CogReader', () => {
 
   test('CogReader opens a GeoTIFF and caches it based on its URL', () => {
 
-    CogReader('file.tif');
-    CogReader('file.tif');
+    CogReader('file.tif').getMetadata();
+    CogReader('file.tif').getMetadata();
 
     expect(mockedPool).toHaveBeenCalledTimes(1);
     expect(mockedFromUrl).toHaveBeenCalledTimes(1);
