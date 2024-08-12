@@ -109,7 +109,7 @@ COGs with a single band can be interpreted DEMs.
 ```javascript
   map.addSource('sourceId', {
     type: 'raster-dem',
-    url: 'cog://cog://https://cdn.geomatico.es/pirineo_dem_cog_256.tif#dem',
+    url: 'cog://https://cdn.geomatico.es/pirineo_dem_cog_256.tif#dem',
   });
 
   map.addLayer({
@@ -127,7 +127,7 @@ COGs with a single band can be interpreted DEMs.
 ```javascript
   map.addSource('sourceId', {
     type: 'raster-dem',
-    url: 'cog://cog://https://cdn.geomatico.es/pirineo_dem_cog_256.tif#dem',
+    url: 'cog://https://cdn.geomatico.es/pirineo_dem_cog_256.tif#dem',
   });
 
   map.setTerrain({
