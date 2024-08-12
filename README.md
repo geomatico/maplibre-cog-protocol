@@ -146,7 +146,7 @@ COGs with a single band can be also converted to images applying a color ramp.
 ```javascript
   map.addSource('sourceId', {
     type: 'raster',
-    url: 'cog://https://labs.geomatico.es/maplibre-cog-protocol/data/kriging#color:BrewerSpectral9,1.7,1.8,c',
+    url: 'cog://https://labs.geomatico.es/maplibre-cog-protocol/data/kriging.tif#color:BrewerSpectral9,1.7,1.8,c',
   });
 
   map.addLayer({
@@ -170,6 +170,34 @@ The color ramp specification consists of the following comma-separated values:
   * add a `c` to apply a continuous color scale (linear interpolation).
 
 
+### Get pixel values for a given location
+
+The `locationValues(url, location, zoom?)` method reads raw pixel values for a given location. It returns an array of numbers, one for each band in the COG. NaNs are returned when querying outside of the image. If zoom is indicated, it will query the nearest overview corresponding to that zoom level.
+
+Example usage in conjunction with maplibre API to get COG values on mouse hover:
+
+```javascript
+import {locationValues} from 'maplibre-cog-protocol';
+
+map.on('mousemove', ({lngLat}) => {
+  locationValues(
+    './data/kriging.tif',
+    {latitude: lngLat.lat, longitude: lnglat.lon},
+    map.getZoom()
+  ).then(console.log);
+});
+```
+
+`locationValues` doesn't depend on Maplibre API or the CogProtocol, so it can be used to query raster values in applications without a map:
+
+```javascript
+import {locationValues} from 'maplibre-cog-protocol';
+
+const url = 'https://labs.geomatico.es/maplibre-cog-protocol/data/kriging.tif';
+locationValues(url, {latitude: 41.656278, longitude: 0.501394}).then(console.log);
+```
+
+
 ## COG generation tips
 
 COG should be in EPSG:3857 (Google Mercator) projection, as this library doesn't reproject and won't understand any other projection.
@@ -190,7 +218,7 @@ docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdalwarp /srv/<s
 #### Digital Elevation Model
 
 ```bash
-docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdalwarp /srv/<source>.tif /srv/<target>.tiff -of COG -co BLOCKSIZE=256 -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=DEFLATE -co RESAMPLING=BILINEAR -co OVERVIEWS=IGNORE_EXISTING -co ADD_ALPHA=NO -co ALIGNED_LEVELS=10 -dstnodata NaN
+docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdalwarp /srv/<source>.tif /srv/<target>.tiff -of COG -co BLOCKSIZE=256 -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=DEFLATE -co RESAMPLING=BILINEAR -co OVERVIEW_RESAMPLING=NEAREST -co OVERVIEWS=IGNORE_EXISTING -co ADD_ALPHA=NO -co ALIGNED_LEVELS=10 -dstnodata NaN
 ```
 
 ## For developers
@@ -207,18 +235,8 @@ git tag vX.X.X
 git push origin tag vX.X.X
 ```
 
-### Roadmap
+### Feature wishlist
 
-Required for robustness and efficiency:
-
-1. [x] Refactor & testing
-2. [x] Single-pass generation of RGBA ImageData
-3. [x] Use raw tile cache: improves efficiency and concurrency
-4. [x] Add a limit to the cache (now increases indefinitely)
-5. [ ] Apply transparency mask if present (now taking 0 as the default noData)
-
-New features wishlist:
-
-1. [ ] Get raw pixel values on mouse hover/click/tap
+1. [ ] Apply transparency mask if present (now taking 0 as the default noData value)
 2. [ ] Raster algebra for multiband GeoTIFFs
 3. [ ] Integrate maplibre-contour

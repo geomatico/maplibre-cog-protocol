@@ -1,6 +1,11 @@
 import {test, expect} from '@jest/globals';
 
-import {tileIndexToMercatorBbox, mercatorBboxToGeographicBbox, zoomFromResolution} from '@/read/math';
+import {
+  tileIndexToMercatorBbox,
+  mercatorBboxToGeographicBbox,
+  zoomFromResolution,
+  tilePixelFromLatLonZoom
+} from '@/read/math';
 
 describe('math', () => {
   test('calculates the BBOX of a tile in EPSG:3857 coordinates', () => {
@@ -32,4 +37,34 @@ describe('math', () => {
     const expected = [19, 18, 17, 16, 15, 14, 13];
     expect(input.map(zoomFromResolution)).toEqual(expected);
   });
+
+  test('calculates the tile index and internal pixel row/column for a given location and zoom level', () => {
+    const cases = [
+      // Null island at zoom 0 is in the center of the (single) tile
+      {latitude: 0, longitude: 0, zoom: 0, x: 0, y: 0, column: 128, row: 128},
+
+      // Null island at zoom 1 is in the corner of the north-western tile
+      {latitude: 0, longitude: 0, zoom: 1, x: 1, y: 1, column: 0, row: 0},
+
+      // Null island at zoom 18 is in the corner of the tile index x = y = 2**18 / 2
+      {latitude: 0, longitude: 0, zoom: 18, x: 131072, y: 131072, column: 0, row: 0},
+
+      // Barcelona coordinates at zoom 1 are somewhere in that north-western tile
+      {latitude: 41.3874, longitude: 2.1686, zoom: 1, x: 1, y: 0, column: 3, row: 191},
+
+      // Barcelona coordinates at zoom 18 are at some tile in the expected range
+      {latitude: 41.3874, longitude: 2.1686, zoom: 18, x: 132651, y: 97909, column: 32, row: 184},
+    ];
+
+    cases.map(({latitude, longitude, zoom, x, y, row, column}) =>
+      expect(
+        tilePixelFromLatLonZoom({latitude, longitude, zoom})
+      ).toEqual({
+        tileIndex: {z: zoom, x, y},
+        row,
+        column
+      })
+    );
+  });
+
 });

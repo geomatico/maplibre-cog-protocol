@@ -7,15 +7,30 @@
   <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
   <script src="dist/index.js"></script>
   <style>
-    html, body, #map {
-      margin:0;
-      width: 100%;
-      height: 100%;
-    }
+      html, body, #map {
+          margin: 0;
+          width: 100%;
+          height: 100%;
+      }
+
+      #info {
+          display: none;
+          position: absolute;
+          top: 0;
+          left: 0;
+          background: #2d2d2d;
+          border: 1px solid #bbbbbb;
+          color: #bbbbbb;
+          padding: 6px;
+          border-radius: 5px;
+          font-family: monospace;
+          font-size: 18px;
+      }
   </style>
 </head>
 <body>
 <div id="map"></div>
+<div id="info"></div>
 <script>
   let map = new maplibregl.Map({
     container: 'map',
@@ -33,12 +48,35 @@
     map.addSource('demSource', {
       type: 'raster-dem',
       url: 'cog://https://cdn.geomatico.es/met2_cat_cog.tiff#dem',
-      tileSize: 256,
+      tileSize: 256
     });
 
     map.setTerrain({
       source: 'demSource'
     });
+  });
+
+  map.on('drag', () => document.getElementById('info').style.display = 'none');
+
+  map.on('mousemove', (e) => {
+    const {lngLat: {lat: latitude, lng: longitude}, point: {x, y}} = e;
+    const zoom = map.getZoom();
+
+    document.getElementById('info').style.left = x + 10 + 'px';
+    document.getElementById('info').style.top = y + 20 + 'px';
+
+    MaplibreCOGProtocol.locationValues('https://cdn.geomatico.es/met2_cat_cog.tiff', {latitude, longitude}, zoom)
+      .then(values => {
+        const height = Math.round(values[0]);
+        if (isNaN(height)) {
+          map.getCanvas().style.cursor = '';
+          document.getElementById('info').style.display = 'none';
+        } else {
+          map.getCanvas().style.cursor = 'default';
+          document.getElementById('info').style.display = 'block';
+          document.getElementById('info').innerHTML = `Height: <b> ${height} m</b>`;
+        }
+      });
   });
 
 </script>

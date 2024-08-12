@@ -10,8 +10,8 @@ export type TileJSON = {
   scheme?: string,
   grids?: Array<string>,
   data?: Array<string>,
-  minzoom?: number,
-  maxzoom?: number,
+  minzoom: number,
+  maxzoom: number,
   bounds?: Array<number>,
   center?: Array<number>
 }
@@ -45,3 +45,20 @@ type ImageMetadata = {
 export type TypedArray = Uint8Array | Int8Array | Uint16Array | Int16Array | Uint32Array | Int32Array | Float32Array | Float64Array;
 
 export type ImageRenderer <T extends object> = (data: TypedArray[], options: T) => Uint8ClampedArray;
+
+export type Location = {
+  latitude: number,
+  longitude: number
+}
+
+export type LatLonZoom = {
+  latitude: number,
+  longitude: number,
+  zoom: number
+}
+
+export type TilePixel = {
+  tileIndex: TileIndex,
+  row: number,
+  column: number
+}
