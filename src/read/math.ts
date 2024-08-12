@@ -1,6 +1,6 @@
 import SphericalMercator from '@mapbox/sphericalmercator';
 
-import {Bbox, TileIndex} from '@/types';
+import {Bbox, LatLonZoom, TileIndex, TilePixelLocation} from '@/types';
 
 const TILE_SIZE = 256;
 const MAX_EXTENT = 2 * 20037508.342789244;
@@ -18,3 +18,20 @@ export const mercatorBboxToGeographicBbox = ([xMin, yMin, xMax, yMax]: Bbox): Bb
 
 export const zoomFromResolution = (res: number): number =>
   Math.log2(MAX_EXTENT / (TILE_SIZE * res));
+
+export const tilePixelLocationFromLatLonZoom = ({latitude, longitude, zoom}: LatLonZoom): TilePixelLocation => {
+  const [mercatorX, mercatorY] = merc.forward([longitude, latitude]);
+
+  const pixelX = (mercatorX + MAX_EXTENT / 2) / MAX_EXTENT * TILE_SIZE * 2 ** zoom;
+  const pixelY = - (mercatorY - MAX_EXTENT / 2) / MAX_EXTENT * TILE_SIZE * 2 ** zoom;
+
+  return {
+    tileIndex: {
+      z: zoom,
+      x: Math.floor(pixelX / TILE_SIZE),
+      y: Math.floor(pixelY / TILE_SIZE)
+    },
+    dx: Math.floor(pixelX % TILE_SIZE),
+    dy: Math.floor(pixelY % TILE_SIZE)
+  }
+}

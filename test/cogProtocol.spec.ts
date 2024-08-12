@@ -11,7 +11,9 @@ import renderTerrain from '@/render/renderTerrain';
 // Test data
 const fakeTileJSON: TileJSON = {
   tilejson: '2.2.0',
-  tiles: ['cog://file.tif#hash/{z}/{x}/{y}']
+  tiles: ['cog://file.tif#hash/{z}/{x}/{y}'],
+  minzoom: 0,
+  maxzoom: 23
 };
 
 const fakeMetadata: CogMetadata = {
