@@ -46,14 +46,19 @@ export type TypedArray = Uint8Array | Int8Array | Uint16Array | Int16Array | Uin
 
 export type ImageRenderer <T extends object> = (data: TypedArray[], options: T) => Uint8ClampedArray;
 
+export type Location = {
+  latitude: number,
+  longitude: number
+}
+
 export type LatLonZoom = {
   latitude: number,
   longitude: number,
   zoom: number
 }
 
-export type TilePixelLocation = {
+export type TilePixel = {
   tileIndex: TileIndex,
-  dx: number,
-  dy: number
+  row: number,
+  column: number
 }

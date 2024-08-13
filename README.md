@@ -219,6 +219,6 @@ Required for robustness and efficiency:
 
 New features wishlist:
 
-1. [ ] Get raw pixel values on mouse hover/click/tap
+1. [x] Get raw pixel values
 2. [ ] Raster algebra for multiband GeoTIFFs
 3. [ ] Integrate maplibre-contour

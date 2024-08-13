@@ -65,21 +65,18 @@
     document.getElementById('info').style.left = x + 10 + 'px';
     document.getElementById('info').style.top = y + 20 + 'px';
 
-    MaplibreCOGProtocol.getLocationValues('https://cdn.geomatico.es/met2_cat_cog.tiff', {
-      latitude,
-      longitude,
-      zoom
-    }).then(values => {
-      const height = Math.round(values[0]);
-      if (isNaN(height)) {
-        map.getCanvas().style.cursor = '';
-        document.getElementById('info').style.display = 'none';
-      } else {
-        map.getCanvas().style.cursor = 'default';
-        document.getElementById('info').style.display = 'block';
-        document.getElementById('info').innerHTML = `Height: <b> ${height} m</b>`;
-      }
-    });
+    MaplibreCOGProtocol.locationValues('https://cdn.geomatico.es/met2_cat_cog.tiff', {latitude, longitude}, zoom)
+      .then(values => {
+        const height = Math.round(values[0]);
+        if (isNaN(height)) {
+          map.getCanvas().style.cursor = '';
+          document.getElementById('info').style.display = 'none';
+        } else {
+          map.getCanvas().style.cursor = 'default';
+          document.getElementById('info').style.display = 'block';
+          document.getElementById('info').innerHTML = `Height: <b> ${height} m</b>`;
+        }
+      });
   });
 
 </script>

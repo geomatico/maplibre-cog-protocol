@@ -65,20 +65,17 @@
     document.getElementById('info').style.left = x + 10 + 'px';
     document.getElementById('info').style.top = y + 20 + 'px';
 
-    MaplibreCOGProtocol.getLocationValues('./data/image.tif', {
-      latitude,
-      longitude,
-      zoom
-    }).then(([Y, Cb, Cr]) => {
-      if (isNaN(Y) || isNaN(Cb) || isNaN(Cr)) {
-        map.getCanvas().style.cursor = '';
-        document.getElementById('info').style.display = 'none';
-      } else {
-        map.getCanvas().style.cursor = 'default';
-        document.getElementById('info').style.display = 'block';
-        document.getElementById('info').innerHTML = `&nbsp;Y: <b>${Y}</b><br/>Cb: <b>${Cb}</b><br/>Cr: <b>${Cr}</b>`;
-      }
-    });
+    MaplibreCOGProtocol.locationValues('./data/image.tif', {latitude, longitude}, zoom)
+      .then(([Y, Cb, Cr]) => {
+        if (isNaN(Y) || isNaN(Cb) || isNaN(Cr)) {
+          map.getCanvas().style.cursor = '';
+          document.getElementById('info').style.display = 'none';
+        } else {
+          map.getCanvas().style.cursor = 'default';
+          document.getElementById('info').style.display = 'block';
+          document.getElementById('info').innerHTML = `&nbsp;Y: <b>${Y}</b><br/>Cb: <b>${Cb}</b><br/>Cr: <b>${Cr}</b>`;
+        }
+      });
   });
 
 </script>

@@ -4,7 +4,7 @@ import {
   tileIndexToMercatorBbox,
   mercatorBboxToGeographicBbox,
   zoomFromResolution,
-  tilePixelLocationFromLatLonZoom
+  tilePixelFromLatLonZoom
 } from '@/read/math';
 
 describe('math', () => {
@@ -38,31 +38,31 @@ describe('math', () => {
     expect(input.map(zoomFromResolution)).toEqual(expected);
   });
 
-  test('calculates the tile index and internal pixel for a given location and zoom level', () => {
+  test('calculates the tile index and internal pixel row/column for a given location and zoom level', () => {
     const cases = [
       // Null island at zoom 0 is in the center of the (single) tile
-      {latitude: 0, longitude: 0, zoom: 0, x: 0, y: 0, dx: 128, dy: 128},
+      {latitude: 0, longitude: 0, zoom: 0, x: 0, y: 0, column: 128, row: 128},
 
       // Null island at zoom 1 is in the corner of the north-western tile
-      {latitude: 0, longitude: 0, zoom: 1, x: 1, y: 1, dx: 0, dy: 0},
+      {latitude: 0, longitude: 0, zoom: 1, x: 1, y: 1, column: 0, row: 0},
 
       // Null island at zoom 18 is in the corner of the tile index x = y = 2**18 / 2
-      {latitude: 0, longitude: 0, zoom: 18, x: 131072, y: 131072, dx: 0, dy: 0},
+      {latitude: 0, longitude: 0, zoom: 18, x: 131072, y: 131072, column: 0, row: 0},
 
       // Barcelona coordinates at zoom 1 are somewhere in that north-western tile
-      {latitude: 41.3874, longitude: 2.1686, zoom: 1, x: 1, y: 0, dx: 3, dy: 191},
+      {latitude: 41.3874, longitude: 2.1686, zoom: 1, x: 1, y: 0, column: 3, row: 191},
 
       // Barcelona coordinates at zoom 18 are at some tile in the expected range
-      {latitude: 41.3874, longitude: 2.1686, zoom: 18, x: 132651, y: 97909, dx: 32, dy: 184},
+      {latitude: 41.3874, longitude: 2.1686, zoom: 18, x: 132651, y: 97909, column: 32, row: 184},
     ];
 
-    cases.map(({latitude, longitude, zoom, x, y, dx, dy}) =>
+    cases.map(({latitude, longitude, zoom, x, y, row, column}) =>
       expect(
-        tilePixelLocationFromLatLonZoom({latitude, longitude, zoom})
+        tilePixelFromLatLonZoom({latitude, longitude, zoom})
       ).toEqual({
         tileIndex: {z: zoom, x, y},
-        dx,
-        dy
+        row,
+        column
       })
     );
   });

@@ -1,5 +1,5 @@
 import cogProtocol from '@/cogProtocol';
 import {colorScale, colorSchemeNames} from '@/render/colorScale';
-import {getLocationValues} from '@/read/cogValues';
+import locationValues from '@/read/locationValues';
 
-export {cogProtocol, colorScale, colorSchemeNames, getLocationValues};
+export {cogProtocol, colorScale, colorSchemeNames, locationValues};

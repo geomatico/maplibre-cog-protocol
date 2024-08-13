@@ -65,21 +65,18 @@
     document.getElementById('info').style.left = x + 10 + 'px';
     document.getElementById('info').style.top = y + 20 + 'px';
 
-    MaplibreCOGProtocol.getLocationValues('./data/kriging.tif', {
-      latitude,
-      longitude,
-      zoom
-    }).then(result => {
-      const value = Math.round(result[0] * 1000) / 1000;
-      if (isNaN(value)) {
-        map.getCanvas().style.cursor = '';
-        document.getElementById('info').style.display = 'none';
-      } else {
-        map.getCanvas().style.cursor = 'default';
-        document.getElementById('info').style.display = 'block';
-        document.getElementById('info').innerHTML = `Value: <b>${value}</b>`;
-      }
-    });
+    MaplibreCOGProtocol.locationValues('./data/kriging.tif', {latitude, longitude}, zoom)
+      .then(result => {
+        const value = Math.round(result[0] * 1000) / 1000;
+        if (isNaN(value)) {
+          map.getCanvas().style.cursor = '';
+          document.getElementById('info').style.display = 'none';
+        } else {
+          map.getCanvas().style.cursor = 'default';
+          document.getElementById('info').style.display = 'block';
+          document.getElementById('info').innerHTML = `Value: <b>${value}</b>`;
+        }
+      });
   });
 
 </script>
