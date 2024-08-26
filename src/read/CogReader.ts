@@ -1,12 +1,12 @@
 import {fromUrl, GeoTIFF, Pool} from 'geotiff';
 import QuickLRU from 'quick-lru';
 
-import {Bbox, CogMetadata, ImageMetadata, TileIndex, TileJSON, TypedArray} from '@/types';
+import {Bbox, CogMetadata, ImageMetadata, TileIndex, TileJSON, TypedArray} from '../types';
 import {
   mercatorBboxToGeographicBbox,
   tileIndexToMercatorBbox,
   zoomFromResolution
-} from '@/read/math';
+} from '../read/math';
 
 const ONE_HOUR_IN_MILLISECONDS = 60 * 60 * 1000;
 

@@ -1,5 +1,5 @@
-import {CogMetadata, ImageRenderer, TypedArray} from '@/types';
-import * as rgba from '@/render/rgba';
+import {CogMetadata, ImageRenderer, TypedArray} from '../types';
+import * as rgba from '../render/rgba';
 
 export enum PhotometricInterpretations {
   WhiteIsZero = 0,

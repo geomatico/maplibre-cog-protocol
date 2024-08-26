@@ -1,6 +1,6 @@
 import {test, expect, describe} from '@jest/globals';
 
-import {colorScale, colorSchemeNames} from '@/render/colorScale';
+import {colorScale, colorSchemeNames} from '../../src/render/colorScale';
 
 describe('colorSchemeNames', () => {
   test('is an array containing supported color scale names', () => {

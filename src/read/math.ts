@@ -1,6 +1,6 @@
 import SphericalMercator from '@mapbox/sphericalmercator';
 
-import {Bbox, LatLonZoom, TileIndex, TilePixel} from '@/types';
+import {Bbox, LatLonZoom, TileIndex, TilePixel} from '../types';
 
 const TILE_SIZE = 256;
 const MAX_EXTENT = 2 * 20037508.342789244;

@@ -1,11 +1,11 @@
 import {test, expect, jest} from '@jest/globals';
 
-import {CogMetadata, TileJSON, TypedArray} from '@/types';
-import cogProtocol from '@/cogProtocol';
-import CogReader from '@/read/CogReader';
-import renderColor from '@/render/renderColor';
-import renderPhoto from '@/render/renderPhoto';
-import renderTerrain from '@/render/renderTerrain';
+import {CogMetadata, TileJSON, TypedArray} from '../src/types';
+import cogProtocol from '../src/cogProtocol';
+import CogReader from '../src/read/CogReader';
+import renderColor from '../src/render/renderColor';
+import renderPhoto from '../src/render/renderPhoto';
+import renderTerrain from '../src/render/renderTerrain';
 
 
 // Test data

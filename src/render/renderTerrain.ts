@@ -1,4 +1,4 @@
-import {CogMetadata, ImageRenderer} from '@/types';
+import {CogMetadata, ImageRenderer} from '../types';
 
 type Options = CogMetadata;
 

@@ -1,4 +1,4 @@
-import {TypedArray} from '@/types';
+import {TypedArray} from '../types';
 
 export function fromWhiteIsZero(data: TypedArray[], max: number, transparentValue: number): Uint8ClampedArray {
   const rgba = new Uint8ClampedArray(data[0].length * 4);

@@ -5,7 +5,7 @@ import {
   mercatorBboxToGeographicBbox,
   zoomFromResolution,
   tilePixelFromLatLonZoom
-} from '@/read/math';
+} from '../../src/read/math';
 
 describe('math', () => {
   test('calculates the BBOX of a tile in EPSG:3857 coordinates', () => {
