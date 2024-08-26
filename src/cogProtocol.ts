@@ -1,10 +1,10 @@
 import {GetResourceResponse, RequestParameters} from 'maplibre-gl';
 
-import CogReader from '@/read/CogReader';
-import renderTerrain from '@/render/renderTerrain';
-import renderColor from '@/render/renderColor';
-import renderPhoto from '@/render/renderPhoto';
-import {TileJSON} from '@/types';
+import CogReader from './read/CogReader';
+import renderTerrain from './render/renderTerrain';
+import renderColor from './render/renderColor';
+import renderPhoto from './render/renderPhoto';
+import {TileJSON} from './types';
 
 export const TILE_SIZE = 256;
 

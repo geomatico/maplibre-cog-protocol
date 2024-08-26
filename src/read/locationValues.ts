@@ -1,8 +1,8 @@
-import {Location, TypedArray} from '@/types';
-import {TILE_SIZE} from '@/cogProtocol';
+import {Location, TypedArray} from '../types';
+import {TILE_SIZE} from '../cogProtocol';
 
-import {tilePixelFromLatLonZoom} from '@/read/math';
-import CogReader from '@/read/CogReader';
+import {tilePixelFromLatLonZoom} from '../read/math';
+import CogReader from '../read/CogReader';
 
 const locationValues = async (url: string, {latitude, longitude}: Location, zoom?: number): Promise<Array<number>> => {
   const cog = CogReader(url);

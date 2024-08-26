@@ -11,10 +11,7 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "declaration": true,
-    "declarationDir": "dist",
-    "paths": {
-      "@/*": ["./src/*"]
-    }
+    "declarationDir": "dist"
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]

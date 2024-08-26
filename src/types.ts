@@ -24,7 +24,7 @@ export type TileIndex = {
 
 export type Bbox = [number, number, number, number];
 
-type CogMetadata = {
+export type CogMetadata = {
   offset: number,
   scale: number,
   noData?: number,
@@ -36,7 +36,7 @@ type CogMetadata = {
   images: Array<ImageMetadata>
 }
 
-type ImageMetadata = {
+export type ImageMetadata = {
   zoom: number,
   isOverview: boolean,
   isMask: boolean

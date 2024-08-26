@@ -1,10 +1,10 @@
 import {test, expect} from '@jest/globals';
 
-import {TypedArray} from '@/types';
+import {TypedArray} from '../../src/types';
 
 import {fromUrl, GeoTIFF, GeoTIFFImage, Pool, ReadRasterResult} from 'geotiff';
-import CogReader from '@/read/CogReader';
-import {PhotometricInterpretations} from '@/render/renderPhoto';
+import CogReader from '../../src/read/CogReader';
+import {PhotometricInterpretations} from '../../src/render/renderPhoto';
 
 
 // Test data

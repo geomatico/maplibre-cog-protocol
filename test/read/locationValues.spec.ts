@@ -1,9 +1,9 @@
 import {test, expect} from '@jest/globals';
 
-import {CogMetadata, TileJSON} from '@/types';
+import {CogMetadata, TileJSON} from '../../src/types';
 
-import locationValues from '@/read/locationValues';
-import CogReader from '@/read/CogReader';
+import locationValues from '../../src/read/locationValues';
+import CogReader from '../../src/read/CogReader';
 
 // Test data
 const fakeTileJSON: TileJSON = {
