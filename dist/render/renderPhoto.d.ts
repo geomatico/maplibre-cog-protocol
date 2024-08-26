@@ -1,4 +1,4 @@
-import { CogMetadata, ImageRenderer } from '@/types';
+import { CogMetadata, ImageRenderer } from '../types';
 export declare enum PhotometricInterpretations {
     WhiteIsZero = 0,
     BlackIsZero = 1,
