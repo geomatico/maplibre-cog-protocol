@@ -42,7 +42,7 @@ export function fromPalette(data: TypedArray[], colorMap: Array<number>, transpa
   const rgba = new Uint8ClampedArray(data[0].length * 4);
   const greenOffset = colorMap.length / 3;
   const blueOffset = colorMap.length / 3 * 2;
-  for (let i = 0; i < data.length; i++) {
+  for (let i = 0; i < data[0].length; i++) {
     const mapIndex = data[0][i];
     rgba[i * 4] = colorMap[mapIndex] / 65536 * 256;
     rgba[i * 4 + 1] = colorMap[mapIndex + greenOffset] / 65536 * 256;
