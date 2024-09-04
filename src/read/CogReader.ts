@@ -60,7 +60,7 @@ const CogReader = (url: string) => {
         noData: firstImage.getGDALNoData() ?? undefined,
         photometricInterpretation: fileDirectory?.PhotometricInterpretation,
         bitsPerSample: fileDirectory?.BitsPerSample,
-        colorMap: fileDirectory?.colorMap,
+        colorMap: fileDirectory?.ColorMap,
         artist: artist,
         bbox: bbox,
         images: imagesMetadata
