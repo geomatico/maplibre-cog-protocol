@@ -345,10 +345,10 @@ const colorScale = ({ colorScheme, customColors, min, max, isReverse = false, is
     } else {
       throw new Error(`"${colorScheme}" is not a supported color scheme`);
     }
-  } else if (customColors.length >= 3) {
+  } else if (customColors.length >= 2) {
     colors = customColors;
   } else {
-    throw new Error(`You must provide at least 3 colors`);
+    throw new Error(`You must provide at least 2 colors`);
   }
 
   const colorInts = colors.map(hexToIntColor);

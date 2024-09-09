@@ -22,14 +22,14 @@ describe('colorScale', () => {
     ).toThrow('"notValid" is not a supported color scheme');
   });
 
-  test('throws an error if less than 3 custom colors are provided', () => {
+  test('throws an error if less than 2 custom colors are provided', () => {
     const colorScheme = "";
-    const customColors: Array<HEXColor> = ['#f7fcb9', '#addd8e'];
+    const customColors: Array<HEXColor> = ['#f7fcb9'];
     const min = 0, max = 1;
 
     expect(() =>
       colorScale({colorScheme, customColors, min, max})
-    ).toThrow('You must provide at least 3 colors');
+    ).toThrow('You must provide at least 2 colors');
   });
 
   test('can generate a discrete color interpolator', () => {
