@@ -1,3 +1,4 @@
+export type HEXColor = `#${string}`;
 export declare const COLOR_SCHEMES: {
     BrewerYlGn3: ("#f7fcb9" | "#addd8e" | "#31a354")[];
     BrewerYlGn4: ("#ffffcc" | "#c2e699" | "#78c679" | "#238443")[];
@@ -293,11 +294,12 @@ export declare const COLOR_SCHEMES: {
 };
 declare const colorSchemeNames: Array<keyof typeof COLOR_SCHEMES>;
 export type ColorScaleParams = {
+    customColors: Array<HEXColor>;
     colorScheme: string;
     min: number;
     max: number;
     isReverse?: boolean;
     isContinuous?: boolean;
 };
-declare const colorScale: ({ colorScheme, min, max, isReverse, isContinuous }: ColorScaleParams) => import("d3-scale").ScaleLinear<[number, number, number], [number, number, number], never> | import("d3-scale").ScaleThreshold<number, [number, number, number], never>;
+declare const colorScale: ({ colorScheme, customColors, min, max, isReverse, isContinuous }: ColorScaleParams) => import("d3-scale").ScaleLinear<[number, number, number], [number, number, number], never> | import("d3-scale").ScaleThreshold<number, [number, number, number], never>;
 export { colorScale, colorSchemeNames };
