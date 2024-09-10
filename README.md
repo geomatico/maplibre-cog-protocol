@@ -19,7 +19,7 @@ For better quality, use always `tileSize: 256` to match the size of tiles delive
 <head>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css">
   <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
-  <script src="https://labs.geomatico.es/maplibre-cog-protocol/dist/index.js"></script>
+  <script src="https://unpkg.com/@geomatico/maplibre-cog-protocol/dist/index.js"></script>
 </head>
 <body>
 <div id="map" style="width: 600px; height: 400px"></div>
