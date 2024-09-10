@@ -10,7 +10,7 @@
     "test": "jest --coverage --verbose --runInBand",
     "test:ci": "jest --runInBand --coverage --verbose",
     "build": "npm run lint && npm run test && rimraf dist && rollup -c rollup.config.mjs",
-    "deploy": "rimraf examples/dist && npm run build && cp -r dist examples && gh-pages -d examples"
+    "gh-publish": "rimraf examples/dist && npm run build && cp -r dist examples && gh-pages -d examples"
   },
   "files": [
     "dist"
