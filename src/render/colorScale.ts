@@ -1,6 +1,6 @@
-import {scaleThreshold, scaleLinear} from 'd3-scale';
+import { scaleLinear, scaleThreshold } from 'd3-scale';
 
-type HEXColor = `#${string}`;
+export type HEXColor = `#${string}`;
 
 export const COLOR_SCHEMES = {
   BrewerYlGn3: ['#f7fcb9', '#addd8e', '#31a354'],
@@ -328,6 +328,7 @@ const thresholds = (min: number, max: number, n: number): Array<number> =>
   );
 
 export type ColorScaleParams = {
+  customColors: Array<HEXColor>,
   colorScheme: string,
   min: number,
   max: number,
@@ -335,21 +336,33 @@ export type ColorScaleParams = {
   isContinuous?: boolean
 }
 
-const colorScale = ({colorScheme, min, max, isReverse = false, isContinuous = false}: ColorScaleParams) => {
-  if (isValidColorSchemeName(colorScheme)) {
-    const colors = COLOR_SCHEMES[colorScheme].map(hexToIntColor);
-    const range = isReverse ? colors.reverse() : colors;
+const colorScale = ({ colorScheme, customColors, min, max, isReverse = false, isContinuous = false }: ColorScaleParams) => {
+  let colors: Array<HEXColor>;
 
-    if (isContinuous) {
-      const domain = intervals(min, max, range.length);
-      return scaleLinear(domain, range).clamp(true);
+  if (colorScheme) {
+    if (isValidColorSchemeName(colorScheme)) {
+      colors = COLOR_SCHEMES[colorScheme];
     } else {
-      const domain = thresholds(min, max, range.length);
-      return scaleThreshold(domain, range);
+      throw new Error(`"${colorScheme}" is not a supported color scheme`);
     }
+  } else if (customColors.length >= 2) {
+    colors = customColors;
   } else {
-    throw new Error(`"${colorScheme}" is not a supported color scheme`);
+    throw new Error(`You must provide at least 2 colors`);
+  }
+
+  const colorInts = colors.map(hexToIntColor);
+
+  const range = isReverse ? colorInts.reverse() : colorInts;
+
+  if (isContinuous) {
+    const domain = intervals(min, max, range.length);
+    return scaleLinear(domain, range).clamp(true);
+  } else {
+    const domain = thresholds(min, max, range.length);
+    return scaleThreshold(domain, range);
   }
 }
 
-export {colorScale, colorSchemeNames};
+export { colorScale, colorSchemeNames };
+

@@ -1,6 +1,6 @@
-import {test, expect, describe} from '@jest/globals';
+import { describe, expect, test } from '@jest/globals';
 
-import {colorScale, colorSchemeNames} from '../../src/render/colorScale';
+import { colorScale, colorSchemeNames, HEXColor } from '../../src/render/colorScale';
 
 describe('colorSchemeNames', () => {
   test('is an array containing supported color scale names', () => {
@@ -18,9 +18,19 @@ describe('colorScale', () => {
     const min = 0, max = 1;
 
     expect(() =>
-      colorScale({colorScheme, min, max})
+      colorScale({colorScheme, customColors: [], min, max})
     ).toThrow('"notValid" is not a supported color scheme');
-  })
+  });
+
+  test('throws an error if less than 2 custom colors are provided', () => {
+    const colorScheme = "";
+    const customColors: Array<HEXColor> = ['#f7fcb9'];
+    const min = 0, max = 1;
+
+    expect(() =>
+      colorScale({colorScheme, customColors, min, max})
+    ).toThrow('You must provide at least 2 colors');
+  });
 
   test('can generate a discrete color interpolator', () => {
     const colorScheme = 'BrewerYlGn3';
@@ -32,7 +42,7 @@ describe('colorScale', () => {
     const color3 = [49, 163, 84];
 
     // Returns a function
-    const color = colorScale({colorScheme, min, max});
+    const color = colorScale({colorScheme, customColors: [], min, max});
     expect(typeof color).toBe('function');
 
     // Min and max values resolve to first and last colors in the scale
@@ -59,7 +69,7 @@ describe('colorScale', () => {
     const color3 = [49, 163, 84];
 
     // Returns a function
-    const color = colorScale({colorScheme, min, max, isReverse: true});
+    const color = colorScale({colorScheme, customColors: [], min, max, isReverse: true});
     expect(typeof color).toBe('function');
 
     // Min and max values resolve to last and first colors in the scale
@@ -86,7 +96,7 @@ describe('colorScale', () => {
     const color3 = [49, 163, 84];
 
     // Returns a function
-    const color = colorScale({colorScheme, min, max, isContinuous: true});
+    const color = colorScale({colorScheme, customColors: [], min, max, isContinuous: true});
     expect(typeof color).toBe('function');
 
     // Min, max and mid values resolve to exact colors in the scale
@@ -113,7 +123,7 @@ describe('colorScale', () => {
     const color3 = [49, 163, 84];
 
     // Returns a function
-    const color = colorScale({colorScheme, min, max, isContinuous: true, isReverse: true});
+    const color = colorScale({colorScheme, customColors: [], min, max, isContinuous: true, isReverse: true});
     expect(typeof color).toBe('function');
 
     // Min, max and mid values resolve to exact colors in the scale

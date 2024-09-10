@@ -1,11 +1,11 @@
-import {test, expect, jest} from '@jest/globals';
+import { expect, jest, test } from '@jest/globals';
 
-import {CogMetadata, TileJSON, TypedArray} from '../src/types';
 import cogProtocol from '../src/cogProtocol';
 import CogReader from '../src/read/CogReader';
 import renderColor from '../src/render/renderColor';
 import renderPhoto from '../src/render/renderPhoto';
 import renderTerrain from '../src/render/renderTerrain';
+import { CogMetadata, TileJSON, TypedArray } from '../src/types';
 
 
 // Test data
@@ -129,6 +129,30 @@ describe('cogProtocol', () => {
 
     const expectedColorScale = {
       colorScheme: 'scheme',
+      customColors: [],
+      min: 10,
+      max: 20,
+      isReverse: true,
+      isContinuous: true
+    }
+
+    expect(mockedCogReader).toHaveBeenCalledWith('file.tif');
+    expect(mockedRenderColor).toHaveBeenCalledWith(fakeRawTile, {...fakeMetadata, colorScale: expectedColorScale});
+
+    const data: Uint8ClampedArray = response.data as unknown as Uint8ClampedArray;
+    expect(isEqualArray(data, fakeImageTile)).toBe(true);
+  });
+
+  test('image requests with #color:{customColors},{min},{max},{modifiers} in url should parse its parameters and return a TerrainRGB image', async () => {
+
+    const response = await cogProtocol({
+      type: 'image',
+      url: 'cog://file.tif#color:["#f7fcb9", "#addd8e", "#31a354"],10,20,-c/1/2/3'
+    });
+
+    const expectedColorScale = {
+      colorScheme: '',
+      customColors: ['#f7fcb9', '#addd8e', '#31a354'],
       min: 10,
       max: 20,
       isReverse: true,

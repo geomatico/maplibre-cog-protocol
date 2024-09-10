@@ -140,8 +140,10 @@ COGs with a single band can be interpreted DEMs.
 
 COGs with a single band can be also converted to images applying a color ramp.
 
-* Use a `raster` source with the url prepended with `cog://` and appended with `#color:` and the color ramp specification.
+* Use a `raster` source with the url prepended with `cog://` and appended with `#color:` and the color ramp specification or an array of custom hex codes.
 * Use a `raster` layer.
+
+#### ColorBrewer or CARTOColors
 
 ```javascript
   map.addSource('sourceId', {
@@ -156,13 +158,29 @@ COGs with a single band can be also converted to images applying a color ramp.
   });
 ```
 
+#### Custom Colors
+
+```javascript
+  map.addSource('sourceId', {
+    type: 'raster',
+    url: 'cog://https://labs.geomatico.es/maplibre-cog-protocol/data/kriging.tif#color:["#ffeda0","#feb24c","#f03b20"],1.7,1.8,c',
+  });
+
+  map.addLayer({
+    id: 'imageId',
+    source: 'sourceId',
+    type: 'raster'
+  });
+```
+
 The color ramp specification consists of the following comma-separated values:
 
 ```
-#color:<colorScheme>,<min>,<max>,<options>
+#color:<colorScheme/customColors>,<min>,<max>,<options>
 ```
 
 * `colorScheme`: Any of the [Color Brewer](https://colorbrewer2.org/) or [CARTOColors](https://carto.com/carto-colors/) schemes are available. See [the Color Ramp cheatsheet](https://labs.geomatico.es/maplibre-cog-protocol/colors.html).
+* `customColors`: An array of hex codes for your color ramp.
 * `min`: A number indicating the minimal value where the color ramp applies.
 * `max`: A number indicating the maximal value where the color ramp applies.
 * `options` (optional):

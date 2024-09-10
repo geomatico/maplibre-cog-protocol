@@ -1,10 +1,11 @@
-import {GetResourceResponse, RequestParameters} from 'maplibre-gl';
+import { GetResourceResponse, RequestParameters } from 'maplibre-gl';
 
 import CogReader from './read/CogReader';
-import renderTerrain from './render/renderTerrain';
+import { HEXColor } from './render/colorScale';
 import renderColor from './render/renderColor';
 import renderPhoto from './render/renderPhoto';
-import {TileJSON} from './types';
+import renderTerrain from './render/renderTerrain';
+import { TileJSON } from './types';
 
 export const TILE_SIZE = 256;
 
@@ -15,8 +16,12 @@ const renderTile = async (url: string) => {
   if (!result) {
     throw new Error(`Invalid COG protocol URL '${url}'`);
   }
-  const cogUrl = result[1].split('#')[0];
-  const hash = result[1].split('#')[1] ?? '';
+  const urlParts = result[1].split('#');
+  const cogUrl = urlParts[0];
+
+  urlParts.shift();
+
+  const hash = urlParts.join('#') ?? '';
   const z = parseInt(result[2]);
   const x = parseInt(result[3]);
   const y = parseInt(result[4]);
@@ -33,16 +38,32 @@ const renderTile = async (url: string) => {
 
   } else if (hash.startsWith('color')) {
     const colorParams = hash.split('color').pop()?.substring(1);
+
     if (!colorParams) {
       throw new Error('Color params are not defined');
     } else {
-      const [colorScheme, minStr, maxStr, modifiers] = colorParams.split(',');
+      const customColorsString = colorParams.match(/\[("#([0-9a-fA-F]{3,6})"(,(\s)?)?)+\]/)?.[0];
+
+      let colorScheme: string = '';
+      let customColors: Array<HEXColor> = [];
+      let minStr: string;
+      let maxStr: string;
+      let modifiers: string;
+
+      if (customColorsString) {
+        customColors = JSON.parse(customColorsString);
+
+        [minStr, maxStr, modifiers] = colorParams.replace(`${customColorsString},`, '').split(',');
+      } else {
+        [colorScheme, minStr, maxStr, modifiers] = colorParams.split(',');
+      }
+
       const min = parseFloat(minStr),
         max = parseFloat(maxStr),
         isReverse = modifiers?.includes('-') || false,
         isContinuous = modifiers?.includes('c') || false;
 
-      rgba = renderColor(rawTile, {...metadata, colorScale: {colorScheme, min, max, isReverse, isContinuous}});
+      rgba = renderColor(rawTile, {...metadata, colorScale: { colorScheme, customColors, min, max, isReverse, isContinuous}});
     }
   } else {
     rgba = renderPhoto(rawTile, metadata);
