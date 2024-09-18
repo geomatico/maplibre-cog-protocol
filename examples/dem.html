@@ -47,8 +47,10 @@
   map.on('load', () => {
     map.addSource('demSource', {
       type: 'raster-dem',
-      url: 'cog://https://cdn.geomatico.es/met2_cat_cog.tiff#dem',
-      tileSize: 256
+      url: 'cog://https://cdn.geomatico.es/dem2m-cog.tiff#dem',
+      tileSize: 256,
+      minzoom: 6,
+      maxzoom: 16
     });
 
     map.setTerrain({
@@ -65,7 +67,7 @@
     document.getElementById('info').style.left = x + 10 + 'px';
     document.getElementById('info').style.top = y + 20 + 'px';
 
-    MaplibreCOGProtocol.locationValues('https://cdn.geomatico.es/met2_cat_cog.tiff', {latitude, longitude}, zoom)
+    MaplibreCOGProtocol.locationValues('https://cdn.geomatico.es/dem2m-cog.tiff', {latitude, longitude}, zoom)
       .then(values => {
         const height = Math.round(values[0]);
         if (isNaN(height)) {
