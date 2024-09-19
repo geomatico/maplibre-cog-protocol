@@ -1,5 +1,5 @@
 import { CogMetadata, ImageRenderer } from '../types';
-import { ColorScaleParams } from '../render/colorScale';
+import { ColorScaleParams } from './colorScale';
 type Options = CogMetadata & {
     colorScale: ColorScaleParams;
 };
