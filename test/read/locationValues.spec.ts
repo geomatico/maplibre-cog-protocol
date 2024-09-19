@@ -41,6 +41,26 @@ describe('locationValues', () => {
     expect(values).toEqual([1, 2, 3]);
   });
 
+  test('applies scale and offset to values', async () => {
+    mockedCogReader.mockReturnValueOnce({
+      getTilejson: () => Promise.resolve(fakeTileJSON),
+      getMetadata: () => Promise.resolve({
+        offset: 10,
+        scale: 2,
+        images: [],
+        noData: 0
+      }),
+      getRawTile: () => Promise.resolve([
+        new Uint8Array(65536).fill(1),
+        new Uint8Array(65536).fill(2),
+        new Uint8Array(65536).fill(3),
+      ])
+    });
+
+    const values = await locationValues('file.tif', {latitude: 0, longitude: 0});
+    expect(values).toEqual([12, 14, 16]);
+  });
+
   test('returns NaN for noData values', async () => {
     mockedCogReader.mockReturnValueOnce({
       getTilejson: () => Promise.resolve(fakeTileJSON),
