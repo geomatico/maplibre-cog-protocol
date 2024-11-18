@@ -136,14 +136,12 @@ COGs with a single band can be interpreted DEMs.
 ```
 
 
-### Apply a color ramp to a single band COG
+### Apply ColorBrewer or CARTOColor ramp to a single-band COG
 
 COGs with a single band can be also converted to images applying a color ramp.
 
-* Use a `raster` source with the url prepended with `cog://` and appended with `#color:` and the color ramp specification or an array of custom hex codes.
+* Use a `raster` source with the url prepended with `cog://` and appended with `#color:` and the color ramp specification.
 * Use a `raster` layer.
-
-#### ColorBrewer or CARTOColors
 
 ```javascript
   map.addSource('sourceId', {
@@ -158,12 +156,44 @@ COGs with a single band can be also converted to images applying a color ramp.
   });
 ```
 
-#### Custom Colors
+
+### Apply a Custom Color function to any COG
+
+In case you want to apply any other color logic, you can provide the callback function that
+maps pixel values to their corresponding RGBA color values, for any given COG.
+
+Use the `setCustomColor` function, which needs two arguments:
+* `cogUrl`: the COG to which the custom color function will be applied. Don't prepend the `cog://` protocol here.
+* `toColorFunction`: A function that maps pixel values to color values, whose arguments are:
+    * `pixel`: An array of numeric values, one for each band. If present, `offset` and `scale` are already applied to each value.
+    * `color`: An Uint8ClampedArray of exactly 4 elements. Set the pixel color by setting the first, second, third and fourth element to `red`, `green`, `blue` and `alpha ` values respetively.
+    * `metadata`: (CogMetadata)[src/types.ts#L27] structure with information about the COG, such as the `noData` value.  
+
+The following example paint values below a threshold as red, and values above as green: 
 
 ```javascript
+  const cogUrl = 'https://labs.geomatico.es/maplibre-cog-protocol/data/kriging.tif';
+  const threshold = 1.75;
+  
+  MaplibreCOGProtocol.setCustomColor(cogUrl, (pixel, color, metadata) => {
+    if (pixel[0] === metadata.noData) {
+      return; // noData value => Transparent pixel.
+    }
+    
+    const [red, green, blue, alpha] = pixel[0] < threshold ?
+        [255, 0, 0, 255] : // Red for values below threshold
+        [0, 255, 0, 255];  // Green for values above threshold
+
+    // Assign color values to given "color" array
+    color[0] = red;
+    color[1] = green;
+    color[2] = blue;
+    color[3] = alpha;
+  });
+
   map.addSource('sourceId', {
     type: 'raster',
-    url: 'cog://https://labs.geomatico.es/maplibre-cog-protocol/data/kriging.tif#color:["#ffeda0","#feb24c","#f03b20"],1.7,1.8,c',
+    url: `cog://${cogUrl}`, // Use the same URL as in setCustomColor, preppended with "cog://".
   });
 
   map.addLayer({
@@ -173,19 +203,12 @@ COGs with a single band can be also converted to images applying a color ramp.
   });
 ```
 
-The color ramp specification consists of the following comma-separated values:
+Some other interesting usages: 
 
-```
-#color:<colorScheme/customColors>,<min>,<max>,<options>
-```
+* Combining bands of a multispectral image to calculate indicators on the fly.
+* Applying color scales not listed in the standard color ramp catalog.
+* Using arbitrary breakpoints or interpolators.
 
-* `colorScheme`: Any of the [Color Brewer](https://colorbrewer2.org/) or [CARTOColors](https://carto.com/carto-colors/) schemes are available. See [the Color Ramp cheatsheet](https://labs.geomatico.es/maplibre-cog-protocol/colors.html).
-* `customColors`: An array of hex codes for your color ramp.
-* `min`: A number indicating the minimal value where the color ramp applies.
-* `max`: A number indicating the maximal value where the color ramp applies.
-* `options` (optional):
-  * add a `-` to apply the reversed scheme (for instance, converts red-to-gren => green-to-red).
-  * add a `c` to apply a continuous color scale (linear interpolation).
 
 
 ### Get pixel values for a given location
@@ -256,5 +279,4 @@ npm run gh-publish  # publish examples to labs.geomatico.es
 ### Feature wishlist
 
 1. [ ] Apply transparency mask if present (now taking 0 as the default noData value)
-2. [ ] Raster algebra for multiband GeoTIFFs
 3. [ ] Integrate maplibre-contour

@@ -31,13 +31,42 @@
 <body>
 <div id="map"></div>
 <div id="info"></div>
-<script>
+<script type="module">
+  import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+
   let map = new maplibregl.Map({
     container: 'map',
     style: 'https://geoserveis.icgc.cat/contextmaps/icgc_orto_estandard.json',
-    center: [0.501427, 41.656126],
-    zoom: 16,
+    center: [2.9785, 42.2768],
+    zoom: 11,
     hash: true
+  });
+
+  const url = "./data/sentinel2.tif";
+
+  const ndviColorScale = d3.scaleThreshold()
+    .domain(
+      [-1.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]  // Threshold values
+    ).range([
+      [0x00, 0x00, 0x00, 0xFF], //         NDVI < -1.0  =>  #000000
+      [0x2C, 0x7B, 0xB6, 0xFF], // -1.0 <= NDVI <  0.1  =>  #2C7BB6
+      [0xFD, 0xAE, 0x61, 0xFF], //  0.1 <= NDVI <  0.2  =>  #FDAE61
+      [0xFE, 0xE0, 0x8B, 0xFF], //  0.2 <= NDVI <  0.3  =>  #FEE08B
+      [0xFF, 0xFF, 0xBF, 0xFF], //  0.3 <= NDVI <  0.4  =>  #FFFFBF
+      [0xD9, 0xEF, 0x8B, 0xFF], //  0.4 <= NDVI <  0.5  =>  #D9EF8B
+      [0xA6, 0xD9, 0x6A, 0xFF], //  0.5 <= NDVI <  0.6  =>  #A6D96A
+      [0x66, 0xBD, 0x63, 0xFF], //  0.6 <= NDVI <  0.7  =>  #66BD63
+      [0x1A, 0x98, 0x50, 0xFF], //  0.7 <= NDVI <  0.8  =>  #1A9850
+      [0x00, 0x68, 0x37, 0xFF]  //         NDVI >= 0.8  =>  #006837
+    ]).unknown(
+      [0x00, 0x00, 0x00, 0x00]  // NaN or undefined  =>  transparent
+    );
+
+  MaplibreCOGProtocol.setCustomColor(url, (pixel, color) => {
+    const [B01, B02, B03, B04, B05, B06, B07, B08, B09, B11, B12, B8A] = pixel; // Get band values
+    const NDVI = (B8A - B04) / (B8A + B04); // Calculate index
+
+    color.set(ndviColorScale(NDVI)); // Apply color
   });
 
   maplibregl.addProtocol('cog', MaplibreCOGProtocol.cogProtocol);
@@ -45,7 +74,7 @@
   map.on('load', () => {
     map.addSource('imageSource', {
       type: 'raster',
-      url: 'cog://./data/kriging.tif#color:["#ff0000", "#00ff00", "#0000ff"],1.7084054885838,1.7919403772937,c',
+      url: `cog://${url}`,
       tileSize: 256
     });
 
@@ -65,16 +94,17 @@
     document.getElementById('info').style.left = x + 10 + 'px';
     document.getElementById('info').style.top = y + 20 + 'px';
 
-    MaplibreCOGProtocol.locationValues('./data/kriging.tif', {latitude, longitude}, zoom)
-      .then(result => {
-        const value = Math.round(result[0] * 1000) / 1000;
-        if (isNaN(value)) {
+    MaplibreCOGProtocol.locationValues(url, {latitude, longitude}, zoom)
+      .then(pixel => {
+        const [B01, B02, B03, B04, B05, B06, B07, B08, B09, B11, B12, B8A] = pixel;
+        const NDVI = Math.round(1000 * (B8A - B04) / (B8A + B04)) / 1000;
+        if (isNaN(NDVI)) {
           map.getCanvas().style.cursor = '';
           document.getElementById('info').style.display = 'none';
         } else {
           map.getCanvas().style.cursor = 'default';
           document.getElementById('info').style.display = 'block';
-          document.getElementById('info').innerHTML = `Value: <b>${value}</b>`;
+          document.getElementById('info').innerHTML = `NDVI: <b>${NDVI}</b>`;
         }
       });
   });

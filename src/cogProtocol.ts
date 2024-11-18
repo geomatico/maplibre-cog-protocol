@@ -6,6 +6,7 @@ import renderColor from './render/renderColor';
 import renderPhoto from './render/renderPhoto';
 import renderTerrain from './render/renderTerrain';
 import { TileJSON } from './types';
+import CustomRendererStore from './render/custom/rendererStore';
 
 export const TILE_SIZE = 256;
 
@@ -33,7 +34,11 @@ const renderTile = async (url: string) => {
 
   let rgba: Uint8ClampedArray;
 
-  if (hash.startsWith('dem')) {
+  const renderCustom = CustomRendererStore.get(cogUrl);
+  if (renderCustom !== undefined) {
+    rgba = renderCustom(rawTile, metadata);
+
+  } else if (hash.startsWith('dem')) {
     rgba = renderTerrain(rawTile, metadata);
 
   } else if (hash.startsWith('color')) {
@@ -42,7 +47,7 @@ const renderTile = async (url: string) => {
     if (!colorParams) {
       throw new Error('Color params are not defined');
     } else {
-      const customColorsString = colorParams.match(/\[("#([0-9a-fA-F]{3,6})"(,(\s)?)?)+\]/)?.[0];
+      const customColorsString = colorParams.match(/\[("#([0-9a-fA-F]{3,6})"(,(\s)?)?)+]/)?.[0];
 
       let colorScheme: string = '';
       let customColors: Array<HEXColor> = [];
