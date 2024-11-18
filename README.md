@@ -205,9 +205,10 @@ The following example paint values below a threshold as red, and values above as
 
 Some other interesting usages: 
 
-* Combining bands of a multispectral image to calculate indicators on the fly.
-* Applying color scales not listed in the standard color ramp catalog.
-* Using arbitrary breakpoints or interpolators.
+* Apply a color scales not listed in the standard ColorBrewer or CartoColors catalog. 
+* Use custom breakpoints or interpolations.
+* Paint other bands.
+* Combine bands of a multispectral image to calculate indicators on the fly.
 
 
 
