@@ -13,12 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- 
+- DEPRECATED ability to provide a custom array of colors as URL hash: `#color:["#ffeda0","#feb24c","#f03b20"]`. Use the new `setCustomColor` method instead, see README. 
 
 ### Removed
 
-- BREAKING remove ability to provide a custom array of colors as URL hash: `#color:["#ffeda0","#feb24c","#f03b20"]`.
-  Use instead the new `setCustomColor` method, see README for an example 
+- 
 
 ### Fixed
 
