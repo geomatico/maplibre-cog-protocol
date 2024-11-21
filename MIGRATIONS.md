@@ -20,7 +20,7 @@ const colors = [[0xFF, 0xED, 0xA0, 0xFF], [0xFE, 0xB2, 0x4C, 0xFF], [0xF0, 0x3B,
 const d = max - min;
 const n = colors.length;
 const thresholds = [min + (d * 1 / n), min + (d * 2 / n)];
-const interpolate = d3.scaleThreshold().domain(thresholds).range(colors).clamp(true);
+const interpolate = scaleThreshold(thresholds, colors);
 
 setColorFunction('example.tif', ([value], rgba, {noData}) => {
   if (value === noData || value === Infinity || isNaN(value)) {
