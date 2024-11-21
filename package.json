@@ -43,7 +43,7 @@
     "maplibre-gl": "^4.5.0",
     "quick-lru": "^6.1.2",
     "rimraf": "^6.0.1",
-    "rollup": "^4.18.1",
+    "rollup": "^4.27.3",
     "ts-jest": "^29.2.2",
     "tslib": "^2.6.3",
     "typescript": "^5.5.3",

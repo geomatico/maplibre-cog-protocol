@@ -6,6 +6,7 @@ import renderColor from '../src/render/renderColor';
 import renderPhoto from '../src/render/renderPhoto';
 import renderTerrain from '../src/render/renderTerrain';
 import { CogMetadata, TileJSON, TypedArray } from '../src/types';
+import RendererStore from '../src/render/custom/rendererStore';
 
 
 // Test data
@@ -35,6 +36,10 @@ mockedCogReader.mockReturnValue({
   getMetadata: () => Promise.resolve(fakeMetadata),
   getRawTile: () => Promise.resolve(fakeRawTile)
 });
+
+jest.mock('@/render/custom/rendererStore');
+const mockedRendererStore_get = jest.mocked(RendererStore.get);
+mockedRendererStore_get.mockReturnValue(undefined);
 
 jest.mock('@/render/renderColor');
 const mockedRenderColor = jest.mocked(renderColor);
@@ -80,13 +85,29 @@ describe('cogProtocol', () => {
     expect(response.data).toEqual(fakeTileJSON);
   });
 
-
   test('image request url should start with \'cog://\' and end with \'{z}/{x}/{y}\'', () => {
 
     expect(cogProtocol({
       type: 'image',
       url: 'maformed_url'
     })).rejects.toThrowError('Invalid COG protocol URL \'maformed_url\'');
+  });
+
+
+  test('image requests with a declared custom renderer should use it', async () => {
+
+    mockedRendererStore_get.mockReturnValue(() => fakeImageTile);
+    const response = await cogProtocol({
+      type: 'image',
+      url: 'cog://file.tif/1/2/3'
+    });
+
+    expect(mockedCogReader).toHaveBeenCalledWith('file.tif');
+    expect(mockedRendererStore_get).toHaveBeenCalledWith('file.tif');
+
+    const data: Uint8ClampedArray = response.data as unknown as Uint8ClampedArray;
+    expect(isEqualArray(data, fakeImageTile)).toBe(true);
+    mockedRendererStore_get.mockReturnValue(undefined);
   });
 
 
@@ -120,7 +141,7 @@ describe('cogProtocol', () => {
   });
 
 
-  test('image requests with #color:{colorScheme},{min},{max},{modifiers} in url should parse its parameters and return a TerrainRGB image', async () => {
+  test('image requests with #color:{colorScheme},{min},{max},{modifiers} in url should parse its parameters and return an image', async () => {
 
     const response = await cogProtocol({
       type: 'image',
@@ -143,7 +164,7 @@ describe('cogProtocol', () => {
     expect(isEqualArray(data, fakeImageTile)).toBe(true);
   });
 
-  test('image requests with #color:{customColors},{min},{max},{modifiers} in url should parse its parameters and return a TerrainRGB image', async () => {
+  test('image requests with #color:{customColors},{min},{max},{modifiers} in url should parse its parameters and return an image', async () => {
 
     const response = await cogProtocol({
       type: 'image',
