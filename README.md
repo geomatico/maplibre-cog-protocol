@@ -157,43 +157,39 @@ COGs with a single band can be also converted to images applying a color ramp.
 ```
 
 
-### Apply a Custom Color function to any COG
+### Apply a Custom Color Function to any COG
 
-In case you want to apply any other color logic, you can provide the callback function that
-maps pixel values to their corresponding RGBA color values, for any given COG.
+In case you want to apply any other coloring logic, you can provide a function that
+converts pixel values to RGBA color values, and assign it to the COG URL where it needs
+to be applied.
 
-Use the `setCustomColor` function, which needs two arguments:
+Use the `setColorFunction` method, which needs two arguments:
 * `cogUrl`: the COG to which the custom color function will be applied. Don't prepend the `cog://` protocol here.
-* `toColorFunction`: A function that maps pixel values to color values, whose arguments are:
-    * `pixel`: An array of numeric values, one for each band. If present, `offset` and `scale` are already applied to each value.
-    * `color`: An Uint8ClampedArray of exactly 4 elements. Set the pixel color by setting the first, second, third and fourth element to `red`, `green`, `blue` and `alpha ` values respetively.
-    * `metadata`: (CogMetadata)[src/types.ts#L27] structure with information about the COG, such as the `noData` value.  
+* `colorFunction`: A function that maps pixel values to color values, whose arguments are:
+    * `pixel`: An array of numeric values, one for each band. If defined in COG metadata, `offset` and `scale` are already applied to each value.
+    * `color`: An Uint8ClampedArray of exactly 4 elements. Set the pixel color by setting the first, second, third and fourth element to `red`, `green`, `blue` and `alpha ` values respectively.
+    * `metadata`: (CogMetadata)[src/types.ts#L27] structure with information about the COG, such as the `noData` value.
 
-The following example paint values below a threshold as red, and values above as green: 
+The following example paints values below a given threshold as red, and green otherwise: 
 
 ```javascript
   const cogUrl = 'https://labs.geomatico.es/maplibre-cog-protocol/data/kriging.tif';
   const threshold = 1.75;
   
-  MaplibreCOGProtocol.setCustomColor(cogUrl, (pixel, color, metadata) => {
+  // Function is called for every pixel, keep it fast!
+  MaplibreCOGProtocol.setColorFunction(cogUrl, (pixel, color, metadata) => {
     if (pixel[0] === metadata.noData) {
-      return; // noData value => Transparent pixel.
+      color.set([0, 0, 0, 0]);     // Transparent
+    } else if (pixel[0] < threshold) {
+      color.set([255, 0, 0, 255]); // Red
+    } else {
+      color.set([0, 255, 0, 255]); // Green
     }
-    
-    const [red, green, blue, alpha] = pixel[0] < threshold ?
-        [255, 0, 0, 255] : // Red for values below threshold
-        [0, 255, 0, 255];  // Green for values above threshold
-
-    // Assign color values to given "color" array
-    color[0] = red;
-    color[1] = green;
-    color[2] = blue;
-    color[3] = alpha;
   });
 
   map.addSource('sourceId', {
     type: 'raster',
-    url: `cog://${cogUrl}`, // Use the same URL as in setCustomColor, preppended with "cog://".
+    url: `cog://${cogUrl}`, // Use the same URL as in setColorFunction, preppended with "cog://".
   });
 
   map.addLayer({
@@ -205,9 +201,9 @@ The following example paint values below a threshold as red, and values above as
 
 Some other interesting usages: 
 
-* Apply a color scales not listed in the standard ColorBrewer or CartoColors catalog. 
+* Apply other color scales not listed in the builtin standard ColorBrewer or CartoColors catalog. 
 * Use custom breakpoints or interpolations.
-* Paint other bands.
+* Display other bands.
 * Combine bands of a multispectral image to calculate indicators on the fly.
 
 
@@ -219,7 +215,7 @@ The `locationValues(url, location, zoom?)` method reads raw pixel values for a g
 Example usage in conjunction with maplibre API to get COG values on mouse hover:
 
 ```javascript
-import {locationValues} from 'maplibre-cog-protocol';
+import {locationValues} from '@geomatico/maplibre-cog-protocol';
 
 map.on('mousemove', ({lngLat}) => {
   locationValues(
@@ -233,7 +229,7 @@ map.on('mousemove', ({lngLat}) => {
 `locationValues` doesn't depend on Maplibre API or the CogProtocol, so it can be used to query raster values in applications without a map:
 
 ```javascript
-import {locationValues} from 'maplibre-cog-protocol';
+import {locationValues} from '@geomatico/maplibre-cog-protocol';
 
 const url = 'https://labs.geomatico.es/maplibre-cog-protocol/data/kriging.tif';
 locationValues(url, {latitude: 41.656278, longitude: 0.501394}).then(console.log);

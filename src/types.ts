@@ -65,4 +65,4 @@ export type TilePixel = {
 
 type PixelValue = Array<number>;
 type RGBAValue = Uint8ClampedArray;
-export type PixelToColorFunction = (pixel: PixelValue, color: RGBAValue, metadata: CogMetadata) => void;
+export type ColorFunction = (pixel: PixelValue, color: RGBAValue, metadata: CogMetadata) => void;

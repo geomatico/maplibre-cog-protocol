@@ -3,17 +3,15 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [unreleased]
 
 ### Added
 
-- Support arbitrary color functions for multiband COGs
-- Added NDVI HTML example 
-- Added CHANGELOG
+- 
 
 ### Changed
 
-- DEPRECATED ability to provide a custom array of colors as URL hash: `#color:["#ffeda0","#feb24c","#f03b20"]`. Use the new `setCustomColor` method instead, see README. 
+- 
 
 ### Removed
 
@@ -22,6 +20,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 -
+
+
+## [0.4.0]
+
+### Added
+
+- Support arbitrary color functions for multiband COGs via `setColorFunction`
+- Added NDVI HTML example 
+- Added CHANGELOG
+
+### Changed
+
+- DEPRECATED ability to provide a custom array of colors as URL hash: `#color:["#ffeda0","#feb24c","#f03b20"]`. Use the new `setColorFunction` method instead, see README. 
 
 
 ## [0.3.1] - 2024-09-19

@@ -1,6 +1,6 @@
-import {CogMetadata, ImageRenderer, PixelToColorFunction} from '../../types';
+import {CogMetadata, ImageRenderer, ColorFunction} from '../../types';
 
-const getCustomPixelRenderer = (toColor: PixelToColorFunction): ImageRenderer<CogMetadata> =>
+const getColorFunctionRenderer = (colorFunction: ColorFunction): ImageRenderer<CogMetadata> =>
   (data, metadata) => {
     const {offset, scale} = metadata;
     const pixels = data[0].length;
@@ -8,9 +8,9 @@ const getCustomPixelRenderer = (toColor: PixelToColorFunction): ImageRenderer<Co
 
     for (let i = 0; i < pixels; i++) {
       const px = data.map(band => offset + band[i] * scale);
-      toColor(px, rgba.subarray(4 * i, 4 * i + 4), metadata);
+      colorFunction(px, rgba.subarray(4 * i, 4 * i + 4), metadata);
     }
     return rgba;
   }
 
-export default getCustomPixelRenderer;
+export default getColorFunctionRenderer;

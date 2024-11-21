@@ -94,7 +94,7 @@ describe('cogProtocol', () => {
   });
 
 
-  test('image requests with a declared customRenderer should use it', async () => {
+  test('image requests with a declared custom renderer should use it', async () => {
 
     mockedRendererStore_get.mockReturnValue(() => fakeImageTile);
     const response = await cogProtocol({
