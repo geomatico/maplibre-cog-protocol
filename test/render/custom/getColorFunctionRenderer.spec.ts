@@ -1,13 +1,12 @@
-import {test, expect} from '@jest/globals';
+import { expect, test } from '@jest/globals';
 
 import getColorFunctionRenderer from '../../../src/render/custom/getColorFunctionRenderer';
 
 describe('getColorFunctionRenderer', () => {
-
   test('returns a Renderer that assigns an RGBA color to each pixel based on the given colorFunction', () => {
     // GIVEN
     const givenTile: Uint8Array[] = [new Uint8Array([1, 2, 3]), new Uint8Array([10, 20, 30])]; // Two bands, 3 pixels each
-    const dummyMetadata = {images: [], offset: 0, scale: 1};
+    const dummyMetadata = { images: [], offset: 0, scale: 1, minzoom: 0, maxzoom: 23 };
     const expectedImage = new Uint8ClampedArray([1, 2, 10, 20, 2, 4, 20, 40, 3, 6, 30, 60]); // Expects 3 RGBA values
 
     // WHEN
@@ -23,6 +22,5 @@ describe('getColorFunctionRenderer', () => {
       const image = renderer(givenTile, dummyMetadata);
       expect(image).toEqual(expectedImage);
     }
-
   });
 });
