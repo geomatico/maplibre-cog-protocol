@@ -1,11 +1,11 @@
 import { TypedArray } from 'geotiff';
-import { ColorFunction, RendererMetadata } from '../types';
+import { ColorFunction, RendererMetadata, RGBAValue } from '../types';
 
 /**
  * Colors all pixels in a tile using a provided color function.
  */
 export function colorTile(data: TypedArray[], metadata: RendererMetadata, colorPixel: ColorFunction): Uint8ClampedArray {
-  const { offset, scale, zoomLevelMetadata, x, y, z, tileSize, maskData } = metadata;
+  const { zoomLevelMetadata, x, y, z, tileSize, maskData } = metadata;
   const pixels = data[0].length;
   const rgba = new Uint8ClampedArray(pixels * 4);
 
@@ -67,23 +67,32 @@ export function colorTile(data: TypedArray[], metadata: RendererMetadata, colorP
 
       for (let columnIndex = 0; columnIndex < tileSize; columnIndex++) {
         const pixelIndex = rowIndex * tileSize + columnIndex;
-        const px = data.map((band) => offset + band[pixelIndex] * scale);
         const offsetColumnIndex = columnIndex + columnOffset;
 
         // If the offset column index exists between the minimum column index and the maximum column index, we can render this pixel.
-        if (rowMaskRange.some(([minColIndex, maxColIndex]) => offsetColumnIndex >= minColIndex && offsetColumnIndex <= maxColIndex)) {
-          colorPixel(px, rgba.subarray(4 * pixelIndex, 4 * pixelIndex + 4));
+        if (rowMaskRange?.some(([minColIndex, maxColIndex]) => offsetColumnIndex >= minColIndex && offsetColumnIndex <= maxColIndex)) {
+          renderPixel(pixelIndex, data, metadata, rgba, colorPixel);
         }
       }
     }
   } else {
     // No mask, just loop over all the pixels
     for (let pixelIndex = 0; pixelIndex < pixels; pixelIndex++) {
-      const px = data.map((band) => offset + band[pixelIndex] * scale);
-
-      colorPixel(px, rgba.subarray(4 * pixelIndex, 4 * pixelIndex + 4));
+      renderPixel(pixelIndex, data, metadata, rgba, colorPixel);
     }
   }
 
   return rgba;
+}
+
+function renderPixel(
+  pixelIndex: number,
+  data: TypedArray[],
+  { offset, scale }: RendererMetadata,
+  rgba: RGBAValue,
+  colorPixel: ColorFunction
+): void {
+  const px = data.map((band) => offset + band[pixelIndex] * scale);
+
+  colorPixel(px, rgba.subarray(4 * pixelIndex, 4 * pixelIndex + 4));
 }
