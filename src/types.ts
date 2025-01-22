@@ -81,7 +81,7 @@ export type TilePixel = {
 
 export type PixelValue = Array<number>;
 export type RGBAValue = Uint8ClampedArray;
-export type ColorFunction = (pixel: PixelValue, color: RGBAValue, metadata?: CogMetadata) => void;
+export type ColorFunction = (pixel: PixelValue, color: RGBAValue, metadata?: CogMetadata, pixelIndex?: number) => void;
 
 export type MaskRows = number[][][];
 export type RendererMetadata = CogMetadata & TileIndex & { tileSize: number; maskData?: MaskRows };

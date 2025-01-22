@@ -72,7 +72,7 @@ const renderTile = async (url: string) => {
       rgba = renderColor(rawTile, { ...rendererMetadata, colorScale: { colorScheme, customColors, min, max, isReverse, isContinuous } });
     }
   } else {
-    rgba = renderPhoto(rawTile, metadata);
+    rgba = renderPhoto(rawTile, rendererMetadata);
   }
 
   return await createImageBitmap(new ImageData(rgba, TILE_SIZE, TILE_SIZE));

@@ -4,10 +4,14 @@ import { ColorFunction, RendererMetadata, RGBAValue } from '../types';
 /**
  * Colors all pixels in a tile using a provided color function.
  */
-export function colorTile(data: TypedArray[], metadata: RendererMetadata, colorPixel: ColorFunction): Uint8ClampedArray {
+export function colorTile(
+  data: TypedArray[],
+  metadata: RendererMetadata,
+  colorPixel: ColorFunction,
+  rgba: RGBAValue = new Uint8ClampedArray(data[0].length * 4)
+): Uint8ClampedArray {
   const { zoomLevelMetadata, x, y, z, tileSize, maskData } = metadata;
   const pixels = data[0].length;
-  const rgba = new Uint8ClampedArray(pixels * 4);
 
   if (maskData) {
     const zoomMetadata = zoomLevelMetadata.get(z);
@@ -85,14 +89,9 @@ export function colorTile(data: TypedArray[], metadata: RendererMetadata, colorP
   return rgba;
 }
 
-function renderPixel(
-  pixelIndex: number,
-  data: TypedArray[],
-  { offset, scale }: RendererMetadata,
-  rgba: RGBAValue,
-  colorPixel: ColorFunction
-): void {
+function renderPixel(pixelIndex: number, data: TypedArray[], metadata: RendererMetadata, rgba: RGBAValue, colorPixel: ColorFunction): void {
+  const { offset, scale } = metadata;
   const px = data.map((band) => offset + band[pixelIndex] * scale);
 
-  colorPixel(px, rgba.subarray(4 * pixelIndex, 4 * pixelIndex + 4));
+  colorPixel(px, rgba.subarray(4 * pixelIndex, 4 * pixelIndex + 4), metadata, pixelIndex);
 }
