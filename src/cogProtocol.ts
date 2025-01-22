@@ -6,10 +6,11 @@ import { getRawTile } from './read/getRawTile';
 import { getTileJson } from './read/getTileJson';
 import { HEXColor } from './render/colorScale';
 import CustomRendererStore from './render/custom/rendererStore';
+import { getMaskRows } from './render/masking';
 import renderColor from './render/renderColor';
 import renderPhoto from './render/renderPhoto';
 import renderTerrain from './render/renderTerrain';
-import { TileJSON } from './types';
+import { RendererMetadata, TileJSON } from './types';
 
 const renderTile = async (url: string) => {
   // Read URL parameters
@@ -31,14 +32,16 @@ const renderTile = async (url: string) => {
   // Read COG data
   const rawTile = await getRawTile(cogUrl, { z, x, y });
   const metadata = await getMetadata(cogUrl);
+  const maskData = getMaskRows(z, metadata);
+  const rendererMetadata: RendererMetadata = { ...metadata, x, y, z, tileSize: TILE_SIZE, maskData };
 
   let rgba: Uint8ClampedArray;
 
   const renderCustom = CustomRendererStore.get(cogUrl);
   if (renderCustom !== undefined) {
-    rgba = renderCustom(rawTile, metadata);
+    rgba = renderCustom(rawTile, rendererMetadata);
   } else if (hash.startsWith('dem')) {
-    rgba = renderTerrain(rawTile, metadata);
+    rgba = renderTerrain(rawTile, rendererMetadata);
   } else if (hash.startsWith('color')) {
     const colorParams = hash.split('color').pop()?.substring(1);
 
@@ -66,7 +69,7 @@ const renderTile = async (url: string) => {
         isReverse = modifiers?.includes('-') || false,
         isContinuous = modifiers?.includes('c') || false;
 
-      rgba = renderColor(rawTile, { ...metadata, colorScale: { colorScheme, customColors, min, max, isReverse, isContinuous } });
+      rgba = renderColor(rawTile, { ...rendererMetadata, colorScale: { colorScheme, customColors, min, max, isReverse, isContinuous } });
     }
   } else {
     rgba = renderPhoto(rawTile, metadata);

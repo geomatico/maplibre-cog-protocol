@@ -1,7 +1,8 @@
 import { expect, test } from '@jest/globals';
 
-import { CogMetadata, TileJSON } from '../../src/types';
+import { RendererMetadata, TileJSON } from '../../src/types';
 
+import { TILE_SIZE } from '../../src/constants';
 import { getMetadata } from '../../src/read/getMetadata';
 import { getRawTile } from '../../src/read/getRawTile';
 import { getTileJson } from '../../src/read/getTileJson';
@@ -16,13 +17,18 @@ const fakeTileJSON: TileJSON = {
   maxzoom: 23,
 };
 
-const fakeMetadata: CogMetadata = {
+const fakeMetadata: RendererMetadata = {
   offset: 0,
   scale: 1,
   images: [],
   noData: 0,
   minzoom: 0,
   maxzoom: 23,
+  zoomLevelMetadata: new Map(),
+  x: 0,
+  y: 0,
+  z: 0,
+  tileSize: TILE_SIZE,
 };
 
 // Mocks
@@ -57,6 +63,10 @@ describe('locationValues', () => {
         noData: 0,
         minzoom: 0,
         maxzoom: 23,
+        zoomLevelMetadata: new Map(),
+        x: 0,
+        y: 0,
+        z: 0,
       })
     );
 

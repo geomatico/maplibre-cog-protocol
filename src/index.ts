@@ -1,6 +1,7 @@
 import cogProtocol from './cogProtocol';
-import {colorScale, colorSchemeNames} from './render/colorScale';
-import setColorFunction from './render/custom/setColorFunction';
 import locationValues from './read/locationValues';
+import { colorScale, colorSchemeNames } from './render/colorScale';
+import setColorFunction from './render/custom/setColorFunction';
+import { setMask } from './render/masking';
 
-export {cogProtocol, colorScale, colorSchemeNames, setColorFunction, locationValues};
+export { cogProtocol, colorScale, colorSchemeNames, locationValues, setColorFunction, setMask };

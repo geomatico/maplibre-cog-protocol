@@ -1,8 +1,14 @@
 import QuickLRU from 'quick-lru';
-import { ONE_HOUR_IN_MILLISECONDS } from '../constants';
-import { Bbox, CogMetadata, ImageMetadata } from '../types';
+import { ONE_HOUR_IN_MILLISECONDS, TILE_SIZE } from '../constants';
+import { Bbox, CogMetadata, ImageMetadata, ZoomMetadata } from '../types';
 import { getGeoTiff } from './getGeoTiff';
-import { mercatorBboxToGeographicBbox, zoomFromResolution } from './math';
+import {
+  imageBboxToTileBounds,
+  mercatorBboxToGeographicBbox,
+  tilePixelFromLatLonZoom,
+  xyBoundsToGeographicBbox,
+  zoomFromResolution,
+} from './math';
 
 const metadataCache = new QuickLRU<string, CogMetadata>({
   maxSize: 16,
@@ -26,6 +32,8 @@ export async function getMetadata(url: string): Promise<CogMetadata> {
 
   const imagesMetadata: Array<ImageMetadata> = [];
 
+  // Lookup for ZoomMetadata for each available zoom level
+  const zoomLevelMetadata = new Map<number, ZoomMetadata>();
   const imageCount = await tiff.getImageCount();
 
   const zooms: number[] = [];
@@ -35,9 +43,32 @@ export async function getMetadata(url: string): Promise<CogMetadata> {
     const zoom = zoomFromResolution(image.getResolution(firstImage)[0]);
     const isOverview = !!(image.fileDirectory.NewSubfileType & 1);
     const isMask = !!(image.fileDirectory.NewSubfileType & 4);
-    imagesMetadata.push({ zoom, isOverview, isMask });
 
+    imagesMetadata.push({ zoom, isOverview, isMask });
     zooms.push(zoom);
+
+    const { tileIndex } = tilePixelFromLatLonZoom({
+      latitude: bbox[3],
+      longitude: bbox[0],
+      zoom,
+    });
+
+    // Get data for zoom level metadata
+    const bounds = imageBboxToTileBounds(imageBbox, zoom);
+
+    const tilesGeographicBbox = xyBoundsToGeographicBbox(bounds, zoom);
+
+    const tileWidth = (bounds.maxX + 1 - bounds.minX) * TILE_SIZE;
+    const tileHeight = (bounds.maxY + 1 - bounds.minY) * TILE_SIZE;
+
+    zoomLevelMetadata.set(zoom, {
+      z: zoom,
+      x: tileIndex.x,
+      y: tileIndex.y,
+      bbox: tilesGeographicBbox,
+      rasterWidth: tileWidth,
+      rasterHeight: tileHeight,
+    });
   }
 
   const minzoom = Math.round(Math.min(...zooms));
@@ -55,6 +86,7 @@ export async function getMetadata(url: string): Promise<CogMetadata> {
     images: imagesMetadata,
     minzoom,
     maxzoom,
+    zoomLevelMetadata,
   };
 
   metadataCache.set(url, metadata);

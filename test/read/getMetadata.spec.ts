@@ -1,5 +1,6 @@
 import { getGeoTiff } from '../../src/read/getGeoTiff';
 import { getMetadata } from '../../src/read/getMetadata';
+import { ZoomMetadata } from '../../src/types';
 import { fakeGeoTIFF } from './mocks/fakeGeoTiff.mock';
 
 import './mocks/fromUrl.mock';
@@ -36,6 +37,30 @@ describe('getMetadata', () => {
           isMask: false,
         },
       ],
+      zoomLevelMetadata: new Map<number, ZoomMetadata>([
+        [
+          19,
+          {
+            bbox: [201640.88061629495, 5098655.534734398, 206532.85042654624, 5102018.763978946],
+            rasterHeight: 11264,
+            rasterWidth: 16384,
+            x: 264782,
+            y: 195395,
+            z: 19,
+          },
+        ],
+        [
+          18,
+          {
+            bbox: [201640.88061629495, 5098655.534734398, 206532.85042654624, 5102018.763978946],
+            rasterHeight: 5632,
+            rasterWidth: 8192,
+            x: 132391,
+            y: 97697,
+            z: 18,
+          },
+        ],
+      ]),
     });
 
     await getMetadata('file.tif');

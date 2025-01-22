@@ -1,7 +1,7 @@
-import { CogMetadata, ImageRenderer } from '../types';
+import { ImageRenderer, RendererMetadata } from '../types';
 import { colorTile } from './colorTile';
 
-type Options = CogMetadata;
+type Options = RendererMetadata;
 
 const renderTerrain: ImageRenderer<Options> = (data, metadata) => {
   const { noData } = metadata;

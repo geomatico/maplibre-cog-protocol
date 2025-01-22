@@ -2,6 +2,7 @@ import { expect, jest, test } from '@jest/globals';
 import { TypedArray } from 'geotiff';
 
 import cogProtocol from '../src/cogProtocol';
+import { TILE_SIZE } from '../src/constants';
 import { getMetadata } from '../src/read/getMetadata';
 import { getRawTile } from '../src/read/getRawTile';
 import { getTileJson } from '../src/read/getTileJson';
@@ -9,7 +10,7 @@ import RendererStore from '../src/render/custom/rendererStore';
 import renderColor from '../src/render/renderColor';
 import renderPhoto from '../src/render/renderPhoto';
 import renderTerrain from '../src/render/renderTerrain';
-import { CogMetadata, TileJSON } from '../src/types';
+import { RendererMetadata, TileJSON } from '../src/types';
 
 // Test data
 const fakeTileJSON: TileJSON = {
@@ -19,12 +20,17 @@ const fakeTileJSON: TileJSON = {
   maxzoom: 23,
 };
 
-const fakeMetadata: CogMetadata = {
+const fakeMetadata: RendererMetadata = {
   offset: 0,
   scale: 1,
   images: [],
   minzoom: 0,
   maxzoom: 23,
+  zoomLevelMetadata: new Map(),
+  x: 2,
+  y: 3,
+  z: 1,
+  tileSize: TILE_SIZE,
 };
 
 const fakeRawTile: TypedArray[] = [new Uint8Array(0)];

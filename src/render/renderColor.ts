@@ -1,8 +1,8 @@
-import { CogMetadata, ImageRenderer } from '../types';
+import { ImageRenderer, RendererMetadata } from '../types';
 import { colorScale, ColorScaleParams } from './colorScale';
 import { colorTile } from './colorTile';
 
-type Options = CogMetadata & { colorScale: ColorScaleParams };
+type Options = RendererMetadata & { colorScale: ColorScaleParams };
 
 const renderColor: ImageRenderer<Options> = (data, options) => {
   const { noData, colorScale: colorScaleParams } = options;

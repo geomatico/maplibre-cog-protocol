@@ -1,18 +1,28 @@
 import { expect, test } from '@jest/globals';
 
-import { TILE_SIZE } from '../../../src/constants';
 import getColorFunctionRenderer from '../../../src/render/custom/getColorFunctionRenderer';
-import { CogMetadata } from '../../../src/types';
+import { RendererMetadata } from '../../../src/types';
 
 describe('getColorFunctionRenderer', () => {
   test('returns a Renderer that assigns an RGBA color to each pixel based on the given colorFunction', () => {
     // GIVEN
-    const pixelCount = TILE_SIZE * TILE_SIZE;
+    const pixelCount = 3 * 3;
     const givenTile: Uint8Array[] = [
       new Uint8Array(pixelCount).fill(0).map((_value, index) => index + 1),
       new Uint8Array(pixelCount).fill(0).map((_value, index) => (index + 1) * 10),
     ]; // Two bands
-    const dummyMetadata: CogMetadata = { images: [], offset: 0, scale: 1, minzoom: 0, maxzoom: 12 };
+    const dummyMetadata: RendererMetadata = {
+      images: [],
+      offset: 0,
+      scale: 1,
+      minzoom: 0,
+      maxzoom: 12,
+      x: 0,
+      y: 0,
+      z: 0,
+      zoomLevelMetadata: new Map(),
+      tileSize: 3,
+    };
 
     const expectedImage = new Uint8ClampedArray(pixelCount * 4);
 
