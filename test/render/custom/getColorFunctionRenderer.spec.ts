@@ -1,13 +1,27 @@
 import { expect, test } from '@jest/globals';
 
+import { TILE_SIZE } from '../../../src/constants';
 import getColorFunctionRenderer from '../../../src/render/custom/getColorFunctionRenderer';
+import { CogMetadata } from '../../../src/types';
 
 describe('getColorFunctionRenderer', () => {
   test('returns a Renderer that assigns an RGBA color to each pixel based on the given colorFunction', () => {
     // GIVEN
-    const givenTile: Uint8Array[] = [new Uint8Array([1, 2, 3]), new Uint8Array([10, 20, 30])]; // Two bands, 3 pixels each
-    const dummyMetadata = { images: [], offset: 0, scale: 1, minzoom: 0, maxzoom: 23 };
-    const expectedImage = new Uint8ClampedArray([1, 2, 10, 20, 2, 4, 20, 40, 3, 6, 30, 60]); // Expects 3 RGBA values
+    const pixelCount = TILE_SIZE * TILE_SIZE;
+    const givenTile: Uint8Array[] = [
+      new Uint8Array(pixelCount).fill(0).map((_value, index) => index + 1),
+      new Uint8Array(pixelCount).fill(0).map((_value, index) => (index + 1) * 10),
+    ]; // Two bands
+    const dummyMetadata: CogMetadata = { images: [], offset: 0, scale: 1, minzoom: 0, maxzoom: 12 };
+
+    const expectedImage = new Uint8ClampedArray(pixelCount * 4);
+
+    for (let pixelIndex = 0; pixelIndex < pixelCount; pixelIndex++) {
+      expectedImage.set(
+        [givenTile[0][pixelIndex], 2 * givenTile[0][pixelIndex], givenTile[1][pixelIndex], 2 * givenTile[1][pixelIndex]],
+        pixelIndex * 4
+      );
+    }
 
     // WHEN
     const colorFunction = (pixel: Array<number>, color: Uint8ClampedArray) => {
@@ -20,6 +34,7 @@ describe('getColorFunctionRenderer', () => {
 
     if (renderer) {
       const image = renderer(givenTile, dummyMetadata);
+
       expect(image).toEqual(expectedImage);
     }
   });
