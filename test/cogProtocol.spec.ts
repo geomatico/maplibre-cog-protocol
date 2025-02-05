@@ -1,41 +1,54 @@
 import { expect, jest, test } from '@jest/globals';
+import { TypedArray } from 'geotiff';
 
 import cogProtocol from '../src/cogProtocol';
-import CogReader from '../src/read/CogReader';
+import { TILE_SIZE } from '../src/constants';
+import { getMetadata } from '../src/read/getMetadata';
+import { getRawTile } from '../src/read/getRawTile';
+import { getTileJson } from '../src/read/getTileJson';
+import RendererStore from '../src/render/custom/rendererStore';
 import renderColor from '../src/render/renderColor';
 import renderPhoto from '../src/render/renderPhoto';
 import renderTerrain from '../src/render/renderTerrain';
-import { CogMetadata, TileJSON, TypedArray } from '../src/types';
-import RendererStore from '../src/render/custom/rendererStore';
-
+import { RendererMetadata, TileJSON } from '../src/types';
 
 // Test data
 const fakeTileJSON: TileJSON = {
   tilejson: '2.2.0',
   tiles: ['cog://file.tif#hash/{z}/{x}/{y}'],
   minzoom: 0,
-  maxzoom: 23
+  maxzoom: 23,
 };
 
-const fakeMetadata: CogMetadata = {
+const fakeMetadata: RendererMetadata = {
   offset: 0,
   scale: 1,
-  images: []
+  images: [],
+  minzoom: 0,
+  maxzoom: 23,
+  zoomLevelMetadata: new Map(),
+  x: 2,
+  y: 3,
+  z: 1,
+  tileSize: TILE_SIZE,
 };
 
 const fakeRawTile: TypedArray[] = [new Uint8Array(0)];
 
 const fakeImageTile: Uint8ClampedArray = new Uint8ClampedArray(4 * 256 * 256);
 
-
 // Mocks
-jest.mock('@/read/CogReader');
-const mockedCogReader = jest.mocked(CogReader);
-mockedCogReader.mockReturnValue({
-  getTilejson: () => Promise.resolve(fakeTileJSON),
-  getMetadata: () => Promise.resolve(fakeMetadata),
-  getRawTile: () => Promise.resolve(fakeRawTile)
-});
+jest.mock('@/read/getTileJson');
+const mockedGetTileJson = jest.mocked(getTileJson);
+mockedGetTileJson.mockReturnValue(Promise.resolve(fakeTileJSON));
+
+jest.mock('@/read/getMetadata');
+const mockedGetMetadata = jest.mocked(getMetadata);
+mockedGetMetadata.mockReturnValue(Promise.resolve(fakeMetadata));
+
+jest.mock('@/read/getRawTile');
+const mockedGetRawTile = jest.mocked(getRawTile);
+mockedGetRawTile.mockReturnValue(Promise.resolve(fakeRawTile));
 
 jest.mock('@/render/custom/rendererStore');
 const mockedRendererStore_get = jest.mocked(RendererStore.get);
@@ -53,12 +66,11 @@ jest.mock('@/render/renderPhoto');
 const mockedRenderTerrain = jest.mocked(renderTerrain);
 mockedRenderTerrain.mockReturnValue(fakeImageTile);
 
-
 // Polyfills simulating a real browser
 
 // @ts-expect-error This is a polyfill for jest environment
 // eslint-disable-next-line no-global-assign
-createImageBitmap <T> = (data: T): Promise<Uint8ClampedArray> => Promise.resolve(data);
+createImageBitmap<T> = (data: T): Promise<Uint8ClampedArray> => Promise.resolve(data);
 
 // @ts-expect-error This is a polyfill for jest environment
 // eslint-disable-next-line no-global-assign
@@ -72,37 +84,34 @@ ImageData = class {
   }
 };
 
-
 describe('cogProtocol', () => {
   test('json type request returns a TileJSON with information about the data source', async () => {
-
     const response = await cogProtocol({
       type: 'json',
-      url: 'cog://file.tif#hash'
+      url: 'cog://file.tif#hash',
     });
 
-    expect(mockedCogReader).toHaveBeenCalledWith('file.tif');
+    expect(mockedGetTileJson).toHaveBeenCalledWith('file.tif', 'cog://file.tif#hash');
     expect(response.data).toEqual(fakeTileJSON);
   });
 
-  test('image request url should start with \'cog://\' and end with \'{z}/{x}/{y}\'', () => {
-
-    expect(cogProtocol({
-      type: 'image',
-      url: 'maformed_url'
-    })).rejects.toThrowError('Invalid COG protocol URL \'maformed_url\'');
+  test("image request url should start with 'cog://' and end with '{z}/{x}/{y}'", () => {
+    expect(
+      cogProtocol({
+        type: 'image',
+        url: 'maformed_url',
+      })
+    ).rejects.toThrowError("Invalid COG protocol URL 'maformed_url'");
   });
 
-
   test('image requests with a declared custom renderer should use it', async () => {
-
     mockedRendererStore_get.mockReturnValue(() => fakeImageTile);
     const response = await cogProtocol({
       type: 'image',
-      url: 'cog://file.tif/1/2/3'
+      url: 'cog://file.tif/1/2/3',
     });
 
-    expect(mockedCogReader).toHaveBeenCalledWith('file.tif');
+    expect(mockedGetMetadata).toHaveBeenCalledWith('file.tif');
     expect(mockedRendererStore_get).toHaveBeenCalledWith('file.tif');
 
     const data: Uint8ClampedArray = response.data as unknown as Uint8ClampedArray;
@@ -110,42 +119,36 @@ describe('cogProtocol', () => {
     mockedRendererStore_get.mockReturnValue(undefined);
   });
 
-
   test('image requests with no hash in url should return a Photo image', async () => {
-
     const response = await cogProtocol({
       type: 'image',
-      url: 'cog://file.tif/1/2/3'
+      url: 'cog://file.tif/1/2/3',
     });
 
-    expect(mockedCogReader).toHaveBeenCalledWith('file.tif');
+    expect(mockedGetMetadata).toHaveBeenCalledWith('file.tif');
     expect(mockedRenderPhoto).toHaveBeenCalledWith(fakeRawTile, fakeMetadata);
 
     const data: Uint8ClampedArray = response.data as unknown as Uint8ClampedArray;
     expect(isEqualArray(data, fakeImageTile)).toBe(true);
   });
 
-
   test('image requests with #dem in url should return a TerrainRGB image', async () => {
-
     const response = await cogProtocol({
       type: 'image',
-      url: 'cog://file.tif#dem/1/2/3'
+      url: 'cog://file.tif#dem/1/2/3',
     });
 
-    expect(mockedCogReader).toHaveBeenCalledWith('file.tif');
+    expect(mockedGetMetadata).toHaveBeenCalledWith('file.tif');
     expect(mockedRenderTerrain).toHaveBeenCalledWith(fakeRawTile, fakeMetadata);
 
     const data: Uint8ClampedArray = response.data as unknown as Uint8ClampedArray;
     expect(isEqualArray(data, fakeImageTile)).toBe(true);
   });
 
-
   test('image requests with #color:{colorScheme},{min},{max},{modifiers} in url should parse its parameters and return an image', async () => {
-
     const response = await cogProtocol({
       type: 'image',
-      url: 'cog://file.tif#color:scheme,10,20,-c/1/2/3'
+      url: 'cog://file.tif#color:scheme,10,20,-c/1/2/3',
     });
 
     const expectedColorScale = {
@@ -154,21 +157,20 @@ describe('cogProtocol', () => {
       min: 10,
       max: 20,
       isReverse: true,
-      isContinuous: true
-    }
+      isContinuous: true,
+    };
 
-    expect(mockedCogReader).toHaveBeenCalledWith('file.tif');
-    expect(mockedRenderColor).toHaveBeenCalledWith(fakeRawTile, {...fakeMetadata, colorScale: expectedColorScale});
+    expect(mockedGetMetadata).toHaveBeenCalledWith('file.tif');
+    expect(mockedRenderColor).toHaveBeenCalledWith(fakeRawTile, { ...fakeMetadata, colorScale: expectedColorScale });
 
     const data: Uint8ClampedArray = response.data as unknown as Uint8ClampedArray;
     expect(isEqualArray(data, fakeImageTile)).toBe(true);
   });
 
   test('image requests with #color:{customColors},{min},{max},{modifiers} in url should parse its parameters and return an image', async () => {
-
     const response = await cogProtocol({
       type: 'image',
-      url: 'cog://file.tif#color:["#f7fcb9", "#addd8e", "#31a354"],10,20,-c/1/2/3'
+      url: 'cog://file.tif#color:["#f7fcb9", "#addd8e", "#31a354"],10,20,-c/1/2/3',
     });
 
     const expectedColorScale = {
@@ -177,41 +179,40 @@ describe('cogProtocol', () => {
       min: 10,
       max: 20,
       isReverse: true,
-      isContinuous: true
-    }
+      isContinuous: true,
+    };
 
-    expect(mockedCogReader).toHaveBeenCalledWith('file.tif');
-    expect(mockedRenderColor).toHaveBeenCalledWith(fakeRawTile, {...fakeMetadata, colorScale: expectedColorScale});
+    expect(mockedGetMetadata).toHaveBeenCalledWith('file.tif');
+    expect(mockedRenderColor).toHaveBeenCalledWith(fakeRawTile, { ...fakeMetadata, colorScale: expectedColorScale });
 
     const data: Uint8ClampedArray = response.data as unknown as Uint8ClampedArray;
     expect(isEqualArray(data, fakeImageTile)).toBe(true);
   });
 
-
   test('image requests with #color and no params should throw an error', () => {
+    expect(
+      cogProtocol({
+        type: 'image',
+        url: 'cog://file.tif#color/1/2/3',
+      })
+    ).rejects.toThrowError('Color params are not defined');
 
-    expect(cogProtocol({
-      type: 'image',
-      url: 'cog://file.tif#color/1/2/3'
-    })).rejects.toThrowError('Color params are not defined');
-
-    expect(mockedCogReader).toHaveBeenCalledWith('file.tif');
+    expect(mockedGetMetadata).toHaveBeenCalledWith('file.tif');
     expect(mockedRenderColor).not.toHaveBeenCalled();
   });
 
-
   test('other request types should throw an error', () => {
-
-    expect(cogProtocol({
-      type: 'string',
-      url: 'cog://file.tif'
-    })).rejects.toThrowError('Unsupported request type \'string\'');
+    expect(
+      cogProtocol({
+        type: 'string',
+        url: 'cog://file.tif',
+      })
+    ).rejects.toThrowError("Unsupported request type 'string'");
   });
-
 });
 
 afterEach(() => {
-  mockedCogReader.mockClear();
+  mockedGetTileJson.mockClear();
   mockedRenderColor.mockClear();
   mockedRenderPhoto.mockClear();
   mockedRenderTerrain.mockClear();
@@ -223,4 +224,4 @@ const isEqualArray = (a: Uint8ClampedArray, b: Uint8ClampedArray): boolean => {
     if (a[i] != b[i]) return false;
   }
   return true;
-}
+};

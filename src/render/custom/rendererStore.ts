@@ -1,6 +1,6 @@
-import {CogMetadata, ImageRenderer} from '../../types';
+import { ImageRenderer, RendererMetadata } from '../../types';
 
-type Renderer = ImageRenderer<CogMetadata>;
+type Renderer = ImageRenderer<RendererMetadata>;
 
 const store: Record<string, Renderer> = {};
 
@@ -10,5 +10,5 @@ export default {
   },
   set: (url: string, renderer: Renderer) => {
     store[url] = renderer;
-  }
+  },
 };

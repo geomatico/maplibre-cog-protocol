@@ -1,20 +1,19 @@
-import {Location, TypedArray} from '../types';
-import {TILE_SIZE} from '../cogProtocol';
+import { Location } from '../types';
 
-import {tilePixelFromLatLonZoom} from './math';
-import CogReader from './CogReader';
+import { TypedArray } from 'geotiff';
+import { TILE_SIZE } from '../constants';
+import { getMetadata } from './getMetadata';
+import { getRawTile } from './getRawTile';
+import { tilePixelFromLatLonZoom } from './math';
 
-const locationValues = async (url: string, {latitude, longitude}: Location, zoom?: number): Promise<Array<number>> => {
-  const cog = CogReader(url);
-
-  const {minzoom, maxzoom} = await cog.getTilejson(url);
-  const {noData, scale, offset} = await cog.getMetadata();
+const locationValues = async (url: string, { latitude, longitude }: Location, zoom?: number): Promise<Array<number>> => {
+  const { noData, scale, offset, minzoom, maxzoom } = await getMetadata(url);
 
   const normalizedZoom = zoom === undefined ? maxzoom : Math.max(minzoom, Math.min(maxzoom, Math.round(zoom)));
 
-  const {tileIndex, column, row} = tilePixelFromLatLonZoom({latitude, longitude, zoom: normalizedZoom});
+  const { tileIndex, column, row } = tilePixelFromLatLonZoom({ latitude, longitude, zoom: normalizedZoom });
 
-  const tile = await cog.getRawTile(tileIndex);
+  const tile = await getRawTile(url, tileIndex);
 
   return tile.map((band: TypedArray) => {
     const px = offset + band[row * TILE_SIZE + column] * scale;
@@ -24,6 +23,6 @@ const locationValues = async (url: string, {latitude, longitude}: Location, zoom
       return px;
     }
   });
-}
+};
 
 export default locationValues;

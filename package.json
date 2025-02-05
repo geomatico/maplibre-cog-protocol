@@ -48,5 +48,9 @@
     "tslib": "^2.6.3",
     "typescript": "^5.5.3",
     "typescript-eslint": "^7.16.1"
+  },
+  "dependencies": {
+    "@types/geojson": "^7946.0.15",
+    "geomask": "^0.5.0"
   }
 }
