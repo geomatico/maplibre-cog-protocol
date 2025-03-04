@@ -4,14 +4,18 @@ import geomask from 'geomask';
 import { CogMetadata, MaskRows } from '../types';
 
 // The provided GeoJSON object that will be used to mask the data.
-let _mask: FeatureCollection<Polygon | MultiPolygon>;
+let _mask: FeatureCollection<Polygon | MultiPolygon> | undefined;
 
 const maskCache = new Map<number, MaskRows>();
 
-export function setMask(mask: FeatureCollection<Polygon | MultiPolygon>): void {
+export function setMask(mask: FeatureCollection<Polygon | MultiPolygon> | undefined): void {
   _mask = mask;
 
   maskCache.clear();
+}
+
+export function clearMask(): void {
+  setMask(undefined);
 }
 
 export function getMaskRows(zoom: number, { zoomLevelMetadata }: CogMetadata): MaskRows | undefined {
