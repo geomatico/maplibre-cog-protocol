@@ -42,7 +42,6 @@ export function getMaskRows(zoom: number, { zoomLevelMetadata }: CogMetadata): M
     raster_width: rasterWidth,
     mask: _mask,
     raster_srs: 3857,
-    mask_srs: 4236,
   });
 
   maskCache.set(zoom, rows);
