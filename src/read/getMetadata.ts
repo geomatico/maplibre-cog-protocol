@@ -1,7 +1,7 @@
 import QuickLRU from 'quick-lru';
 import { ONE_HOUR_IN_MILLISECONDS, TILE_SIZE } from '../constants';
 import { Bbox, CogMetadata, ImageMetadata, ZoomMetadata } from '../types';
-import { getGeoTiff } from './getGeoiff';
+import { getGeoTiff } from './getGeoTiff';
 import {
   imageBboxToTileBounds,
   mercatorBboxToGeographicBbox,

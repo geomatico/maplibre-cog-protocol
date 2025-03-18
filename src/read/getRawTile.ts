@@ -2,7 +2,7 @@ import { TypedArray } from 'geotiff';
 import QuickLRU from 'quick-lru';
 import { ONE_HOUR_IN_MILLISECONDS, TILE_SIZE } from '../constants';
 import { TileIndex } from '../types';
-import { getGeoTiff } from './getGeoiff';
+import { getGeoTiff } from './getGeoTiff';
 import { getMetadata } from './getMetadata';
 import { tileIndexToMercatorBbox } from './math';
 
