@@ -259,6 +259,14 @@ MaplibreCOGProtocol.clearMask();
 
 You will also need to force the map to redraw the COG layer.
 
+```javascript
+const source = map.getSource('yourSourceId');
+
+if (source?.tiles) {
+  source.setTiles([`${source.tiles[0]}?${Date.now()}`]);
+}
+```
+
 ## COG generation tips
 
 COG should be in EPSG:3857 (Google Mercator) projection, as this library doesn't reproject and won't understand any other projection.
