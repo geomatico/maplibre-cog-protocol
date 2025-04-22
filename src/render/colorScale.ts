@@ -328,8 +328,8 @@ const thresholds = (min: number, max: number, n: number): Array<number> =>
   );
 
 export type ColorScaleParams = {
-  customColors: Array<HEXColor>,
-  colorScheme: string,
+  customColors?: Array<HEXColor>,
+  colorScheme?: string,
   min: number,
   max: number,
   isReverse?: boolean,
@@ -345,10 +345,10 @@ const colorScale = ({ colorScheme, customColors, min, max, isReverse = false, is
     } else {
       throw new Error(`"${colorScheme}" is not a supported color scheme`);
     }
-  } else if (customColors.length >= 2) {
+  } else if (customColors && customColors.length >= 2) {
     colors = customColors;
   } else {
-    throw new Error(`You must provide at least 2 colors`);
+    throw new Error(`You must provide a colorScheme or an array of at least 2 customColors`);
   }
 
   const colorInts = colors.map(hexToIntColor);
@@ -365,4 +365,3 @@ const colorScale = ({ colorScheme, customColors, min, max, isReverse = false, is
 }
 
 export { colorScale, colorSchemeNames };
-
