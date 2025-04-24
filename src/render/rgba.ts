@@ -1,65 +1,73 @@
+import { TILE_SIZE } from '../constants';
 import {TypedArray} from '../types';
 
-export function fromWhiteIsZero(data: TypedArray[], max: number, transparentValue: number): Uint8ClampedArray {
-  const rgba = new Uint8ClampedArray(data[0].length * 4);
+const numPixels = TILE_SIZE * TILE_SIZE;
+
+const numBands = (data: TypedArray): number => data.length / numPixels;
+
+export function fromWhiteIsZero(data: TypedArray, max: number, transparentValue: number): Uint8ClampedArray {
+  const rgba = new Uint8ClampedArray(numPixels * 4);
+  const bands = numBands(data);
   let value;
-  for (let i = 0; i < data[0].length; i++) {
-    value = 255 - (data[0][i] / max * 255);
+  for (let i = 0; i < numPixels; i++) {
+    value = 255 - (data[i * bands] / max * 255);
     rgba[i * 4] = value;
     rgba[i * 4 + 1] = value;
     rgba[i * 4 + 2] = value;
-    rgba[i * 4 + 3] = data[0][i] === transparentValue ? 0 : 255;
+    rgba[i * 4 + 3] = data[i * bands] === transparentValue ? 0 : 255;
   }
   return rgba;
 }
 
-export function fromBlackIsZero(data: TypedArray[], max: number, transparentValue: number): Uint8ClampedArray {
-  const rgba = new Uint8ClampedArray(data[0].length * 4);
+export function fromBlackIsZero(data: TypedArray, max: number, transparentValue: number): Uint8ClampedArray {
+  const rgba = new Uint8ClampedArray(numPixels * 4);
+  const bands = numBands(data);
   let value;
-  for (let i = 0; i < data[0].length; i++) {
-    value = data[0][i] / max * 255;
+  for (let i = 0; i < numPixels; i++) {
+    value = data[i * bands] / max * 255;
     rgba[i * 4] = value;
     rgba[i * 4 + 1] = value;
     rgba[i * 4 + 2] = value;
-    rgba[i * 4 + 3] = data[0][i] === transparentValue ? 0 : 255;
+    rgba[i * 4 + 3] = data[i * bands] === transparentValue ? 0 : 255;
   }
   return rgba;
 }
 
-export function fromRGB(data: TypedArray[], transparentValue: number): Uint8ClampedArray {
-  const [R, G, B] = data;
-  const rgba = new Uint8ClampedArray(data[0].length * 4);
-  for (let i = 0; i < data[0].length; i++) {
-    rgba[i * 4] = R[i];
-    rgba[i * 4 + 1] = G[i];
-    rgba[i * 4 + 2] = B[i];
-    rgba[i * 4 + 3] = R[i] === transparentValue && G[i] == transparentValue && B[i] == transparentValue ? 0 : 255;
+export function fromRGB(data: TypedArray, transparentValue: number): Uint8ClampedArray {
+  const rgba = new Uint8ClampedArray(numPixels * 4);
+  const bands = numBands(data);
+  for (let i = 0; i < numPixels; i++) {
+    rgba[i * 4] = data[i * bands];
+    rgba[i * 4 + 1] = data[i * bands + 1];
+    rgba[i * 4 + 2] = data[i * bands + 2];
+    rgba[i * 4 + 3] = data[i * bands] === transparentValue && data[i * bands + 1] === transparentValue && data[i * bands + 2] === transparentValue ? 0 : 255;
   }
   return rgba;
 }
 
-export function fromPalette(data: TypedArray[], colorMap: Array<number>, transparentValue: number): Uint8ClampedArray {
-  const rgba = new Uint8ClampedArray(data[0].length * 4);
+export function fromPalette(data: TypedArray, colorMap: Array<number>, transparentValue: number): Uint8ClampedArray {
+  const rgba = new Uint8ClampedArray(numPixels * 4);
+  const bands = numBands(data);
   const greenOffset = colorMap.length / 3;
   const blueOffset = colorMap.length / 3 * 2;
-  for (let i = 0; i < data[0].length; i++) {
-    const mapIndex = data[0][i];
+  for (let i = 0; i < numPixels; i++) {
+    const mapIndex = data[i * bands];
     rgba[i * 4] = colorMap[mapIndex] / 65536 * 256;
     rgba[i * 4 + 1] = colorMap[mapIndex + greenOffset] / 65536 * 256;
     rgba[i * 4 + 2] = colorMap[mapIndex + blueOffset] / 65536 * 256;
-    rgba[i * 4 + 3] = data[0][i] === transparentValue ? 0 : 255;
+    rgba[i * 4 + 3] = data[i * bands] === transparentValue ? 0 : 255;
   }
   return rgba;
 }
 
-export function fromCMYK(data: TypedArray[], transparentValue: number): Uint8ClampedArray {
-  const rgba = new Uint8ClampedArray(data[0].length * 4);
-  const [C, M, Y, K] = data;
+export function fromCMYK(data: TypedArray, transparentValue: number): Uint8ClampedArray {
+  const rgba = new Uint8ClampedArray(numPixels * 4);
+  const bands = numBands(data);
   for (let i = 0; i < data.length; i++) {
-    const c = C[i];
-    const m = M[i];
-    const y = Y[i];
-    const k = K[i];
+    const c = data[i * bands];
+    const m = data[i * bands + 1];
+    const y = data[i * bands + 2];
+    const k = data[i * bands + 3];
 
     rgba[i * 4] = 255 * ((255 - c) / 256) * ((255 - k) / 256);
     rgba[i * 4 + 1] = 255 * ((255 - m) / 256) * ((255 - k) / 256);
@@ -69,13 +77,13 @@ export function fromCMYK(data: TypedArray[], transparentValue: number): Uint8Cla
   return rgba;
 }
 
-export function fromYCbCr(data: TypedArray[], transparentValue: number): Uint8ClampedArray {
-  const [Y, CB, CR] = data;
-  const rgba = new Uint8ClampedArray(data[0].length * 4);
-  for (let i = 0; i < data[0].length; i++) {
-    const y = Y[i];
-    const cb = CB[i];
-    const cr = CR[i];
+export function fromYCbCr(data: TypedArray, transparentValue: number): Uint8ClampedArray {
+  const rgba = new Uint8ClampedArray(numPixels * 4);
+  const bands = numBands(data);
+  for (let i = 0; i < numPixels; i++) {
+    const y = data[i * bands];
+    const cb = data[i * bands + 1];
+    const cr = data[i * bands + 2];
 
     rgba[i * 4] = (y + (1.40200 * (cr - 0x80)));
     rgba[i * 4 + 1] = (y - (0.34414 * (cb - 0x80)) - (0.71414 * (cr - 0x80)));
@@ -91,13 +99,14 @@ const Zn = 1.08883;
 
 // from https://github.com/antimatter15/rgb-lab/blob/master/color.js
 
-export function fromCIELab(data: TypedArray[], transparentValue: number): Uint8ClampedArray {
-  const rgba = new Uint8ClampedArray(data[0].length);
+export function fromCIELab(data: TypedArray, transparentValue: number): Uint8ClampedArray {
+  const rgba = new Uint8ClampedArray(numPixels);
+  const bands = numBands(data);
 
   for (let i = 0; i < data.length; i++) {
-    const L = data[0][i];
-    const a_ = data[1][i] << 24 >> 24; // conversion from uint8 to int8
-    const b_ = data[2][i] << 24 >> 24; // same
+    const L = data[i * bands];
+    const a_ = data[i * bands + 1] << 24 >> 24; // conversion from uint8 to int8
+    const b_ = data[i * bands + 2] << 24 >> 24; // same
 
     let y = (L + 16) / 116;
     let x = (a_ / 500) + y;

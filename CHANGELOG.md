@@ -7,11 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- 
+- Added timeseries example: Animated symbolization of a multiband geotiff, each band representing a time instant.
 
 ### Changed
 
-- 
+- BREAKING in `setColorFunction` the `pixel` parameter of `colorFunction` is now a [TypedArray](src/types.ts#L45) with the raw pixel values as read from GeoTiff, no `offset` or `scale` pre-applied.
 
 ### Removed
 
@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
--
+- Greatly improved multiband symbolization performance.
 
 
 ## [0.4.0]

@@ -1,8 +1,8 @@
-import {Location, TypedArray} from '../types';
-import {TILE_SIZE} from '../cogProtocol';
+import {Location} from '../types';
 
 import {tilePixelFromLatLonZoom} from './math';
 import CogReader from './CogReader';
+import {TILE_SIZE} from '../constants';
 
 const locationValues = async (url: string, {latitude, longitude}: Location, zoom?: number): Promise<Array<number>> => {
   const cog = CogReader(url);
@@ -15,9 +15,12 @@ const locationValues = async (url: string, {latitude, longitude}: Location, zoom
   const {tileIndex, column, row} = tilePixelFromLatLonZoom({latitude, longitude, zoom: normalizedZoom});
 
   const tile = await cog.getRawTile(tileIndex);
+  const pixels = TILE_SIZE * TILE_SIZE;
+  const numBands = tile.length / pixels;
 
-  return tile.map((band: TypedArray) => {
-    const px = offset + band[row * TILE_SIZE + column] * scale;
+  const i = row * TILE_SIZE + column;
+  return Array.from(tile.subarray(i * numBands, i * numBands + numBands)).map(rawValue => {
+    const px = offset + rawValue * scale;
     if (px === noData || isNaN(px) || px === Infinity) {
       return NaN;
     } else {
