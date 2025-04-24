@@ -166,9 +166,9 @@ to be applied.
 Use the `setColorFunction` method, which needs two arguments:
 * `cogUrl`: the COG to which the custom color function will be applied. Don't prepend the `cog://` protocol here.
 * `colorFunction`: A function that maps pixel values to color values, whose arguments are:
-    * `pixel`: An array of numeric values, one for each band. If defined in COG metadata, `offset` and `scale` are already applied to each value.
-    * `color`: An Uint8ClampedArray of exactly 4 elements. Set the pixel color by setting the first, second, third and fourth element to `red`, `green`, `blue` and `alpha ` values respectively.
-    * `metadata`: (CogMetadata)[src/types.ts#L27] structure with information about the COG, such as the `noData` value.
+    * `pixel`: A [TypedArray](src/types.ts#L45) with the raw pixel data as read from the geotiff, one value per band.
+    * `color`: An Uint8ClampedArray of exactly 4 elements. Set the pixel color by setting the first, second, third and fourth element to `red`, `green`, `blue` and `alpha` values respectively.
+    * `metadata`: [CogMetadata](src/types.ts#L27) structure with information about the COG, such as `noData`, `offset` or `scale` values.
 
 The following example paints values below a given threshold as red, and green otherwise: 
 

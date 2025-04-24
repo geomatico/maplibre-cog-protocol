@@ -1,7 +1,6 @@
 import { TILE_SIZE } from '../constants';
 import {TypedArray} from '../types';
 
-//const TILE_SIZE = 256;
 const numPixels = TILE_SIZE * TILE_SIZE;
 
 const numBands = (data: TypedArray): number => data.length / numPixels;
