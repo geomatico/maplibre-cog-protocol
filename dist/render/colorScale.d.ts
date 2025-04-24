@@ -294,8 +294,8 @@ export declare const COLOR_SCHEMES: {
 };
 declare const colorSchemeNames: Array<keyof typeof COLOR_SCHEMES>;
 export type ColorScaleParams = {
-    customColors: Array<HEXColor>;
-    colorScheme: string;
+    customColors?: Array<HEXColor>;
+    colorScheme?: string;
     min: number;
     max: number;
     isReverse?: boolean;

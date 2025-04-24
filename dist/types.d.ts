@@ -38,7 +38,7 @@ export type ImageMetadata = {
     isMask: boolean;
 };
 export type TypedArray = Uint8Array | Int8Array | Uint16Array | Int16Array | Uint32Array | Int32Array | Float32Array | Float64Array;
-export type ImageRenderer<T extends object> = (data: TypedArray[], options: T) => Uint8ClampedArray;
+export type ImageRenderer<T extends object> = (data: TypedArray, options: T) => Uint8ClampedArray;
 export type Location = {
     latitude: number;
     longitude: number;
@@ -53,7 +53,6 @@ export type TilePixel = {
     row: number;
     column: number;
 };
-type PixelValue = Array<number>;
 type RGBAValue = Uint8ClampedArray;
-export type ColorFunction = (pixel: PixelValue, color: RGBAValue, metadata: CogMetadata) => void;
+export type ColorFunction = (pixel: TypedArray, color: RGBAValue, metadata: CogMetadata) => void;
 export {};
