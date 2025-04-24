@@ -14,7 +14,7 @@ let pool: Pool;
 
 const geoTiffCache = new QuickLRU<string, Promise<GeoTIFF>>({maxSize: 16, maxAge: ONE_HOUR_IN_MILLISECONDS});
 const metadataCache = new QuickLRU<string, Promise<CogMetadata>>({maxSize: 16, maxAge: ONE_HOUR_IN_MILLISECONDS});
-const tileCache = new QuickLRU<string, Promise<TypedArray[]>>({maxSize: 1024, maxAge: ONE_HOUR_IN_MILLISECONDS});
+const tileCache = new QuickLRU<string, Promise<TypedArray>>({maxSize: 1024, maxAge: ONE_HOUR_IN_MILLISECONDS});
 
 const CogReader = (url: string) => {
   if (pool === undefined) {
@@ -88,7 +88,7 @@ const CogReader = (url: string) => {
     };
   };
 
-  const getRawTile = async ({z, x, y}: TileIndex, tileSize: number = 256): Promise<TypedArray[]> => {
+  const getRawTile = async ({z, x, y}: TileIndex, tileSize: number = 256): Promise<TypedArray> => {
     const key = `${url}/${tileSize}/${z}/${x}/${y}`;
     const cachedTile = tileCache.get(key);
     if (cachedTile) {
@@ -106,11 +106,11 @@ const CogReader = (url: string) => {
         bbox: tileIndexToMercatorBbox({x, y, z}),
         width: tileSize,
         height: tileSize,
-        interleave: false,
+        interleave: true,
         resampleMethod: 'nearest',
         pool,
         fillValue // When fillValue is Infinity, integer types will be filled with a 0 value.
-      }) as Promise<TypedArray[]>; // ReadRasterResult extends TypedArray[]
+      }) as Promise<TypedArray>; // ReadRasterResult extends TypedArray
 
       tileCache.set(key, tile);
       return tile;

@@ -23,7 +23,7 @@ const fakeMetadata: CogMetadata = {
   images: []
 };
 
-const fakeRawTile: TypedArray[] = [new Uint8Array(0)];
+const fakeRawTile: TypedArray = new Uint8Array(0);
 
 const fakeImageTile: Uint8ClampedArray = new Uint8ClampedArray(4 * 256 * 256);
 

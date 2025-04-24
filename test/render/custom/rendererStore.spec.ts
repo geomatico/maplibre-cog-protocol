@@ -18,7 +18,7 @@ describe('rendererStore', () => {
     const renderer = RendererStore.get('stored.tif');
     expect(renderer).toBeInstanceOf(Function);
     if (renderer) {
-      expect(renderer([], dummyMetadata)).toEqual(sampleImage);
+      expect(renderer(new Int8Array(), dummyMetadata)).toEqual(sampleImage);
     }
   });
 });

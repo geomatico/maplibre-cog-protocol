@@ -7,8 +7,7 @@ import renderPhoto from './render/renderPhoto';
 import renderTerrain from './render/renderTerrain';
 import { TileJSON } from './types';
 import CustomRendererStore from './render/custom/rendererStore';
-
-export const TILE_SIZE = 256;
+import { TILE_SIZE } from './constants';
 
 const renderTile = async (url: string) => {
   // Read URL parameters
@@ -75,11 +74,7 @@ const renderTile = async (url: string) => {
   }
 
   return await createImageBitmap(
-    new ImageData(
-      rgba,
-      TILE_SIZE,
-      TILE_SIZE
-    )
+    new ImageData(rgba, TILE_SIZE, TILE_SIZE)
   );
 };
 

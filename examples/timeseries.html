@@ -13,11 +13,18 @@
           height: 100%;
       }
 
-      #info {
-          display: none;
+      #centerpoint {
+          top: 50%;
+          left: 50%;
           position: absolute;
-          top: 0;
-          left: 0;
+      }
+
+      #loading {
+          position: relative;
+          width: 180px;
+          margin-left: -90px;
+          height: 30px;
+          margin-top: -15px;
           background: #2d2d2d;
           border: 1px solid #bbbbbb;
           color: #bbbbbb;
@@ -26,12 +33,114 @@
           font-family: monospace;
           font-size: 18px;
       }
+
+      #chart {
+          position: absolute;
+          bottom: 50px;
+          right: 10px;
+          background: #2d2d2d;
+          border: 1px solid #bbbbbb;
+      }
+
   </style>
 </head>
 <body>
 <div id="map"></div>
-<div id="info"></div>
+<div id="centerpoint">
+  <div id="loading">Loading data...</div>
+</div>
+<canvas id="chart" width="300" height="150"></canvas>
 <script type="module">
+
+  const url = "./data/timeseries.tif";
+  const colorScale = MaplibreCOGProtocol.colorScale({colorScheme: 'BrewerRdYlBu10', min: 1, max: 7, isContinuous: true, isReverse: true});
+  let chartData = [];
+  let b = 0;
+
+  const showBand = band => MaplibreCOGProtocol.setColorFunction(url, (pixel, color, metadata) => {
+    const value = pixel[band];
+    if (value === metadata.noData) {
+      color[3] = 0;
+    } else {
+      const [r, g, b] = colorScale(value * metadata.scale + metadata.offset);
+      color[0] = r;
+      color[1] = g;
+      color[2] = b;
+      color[3] = 224;
+    }
+  });
+
+  const drawChart = () => {
+    const canvas = document.getElementById("chart");
+    const ctx = canvas.getContext("2d");
+
+    const width = canvas.width;
+    const height = canvas.height;
+    const padding = 10;
+
+    const yMin = 0;
+    const yMax = 8;
+
+    const stepX = (width - 2 * padding) / (127 - 1);
+
+    // CLEAR CHART
+    ctx.clearRect(0, 0, width, height);
+
+    // DRAW AXES
+    ctx.strokeStyle = "#bbbbbb44";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+
+    // Y axis labels
+    ctx.fillStyle = "#bbbbbb";
+    ctx.font = "10px sans-serif";
+    ctx.textAlign = "left";
+    for (let i = 0; i <= 8; i++) {
+      const y = height - padding - ((i - yMin) / (yMax - yMin)) * (height - 2 * padding);
+      ctx.fillText(i.toString(), 2, y + 4);
+      ctx.beginPath();
+      ctx.moveTo(padding, y);
+      ctx.lineTo(width - padding, y);
+      ctx.stroke();
+    }
+
+    // Current time vertical line
+    ctx.beginPath();
+    ctx.moveTo(padding + b * stepX, padding);
+    ctx.lineTo(padding + b * stepX, height - padding);
+    ctx.stroke();
+
+    // Elapsed time label
+    ctx.font = "17px sans-serif";
+    ctx.textAlign = "right";
+    const hours = Math.floor(b / 60) < 0 ? "0" : Math.floor(b / 60).toString();
+    const minutes = (b % 60) < 10 ? "0" + (b % 60).toString() : (b % 60).toString();
+    ctx.fillText(`${hours}h ${minutes}'`, width - padding, height - padding - 2);
+
+    // DRAW DATA
+    for (let i = 1; i < chartData.length; i++) {
+      const prev = chartData[i - 1];
+      const curr = chartData[i];
+
+      if (isNaN(prev) || isNaN(curr)) continue; // Skip invalid segments
+
+      const x1 = padding + (i - 1) * stepX;
+      const y1 = height - padding - ((prev - yMin) / (yMax - yMin)) * (height - 2 * padding);
+
+      const x2 = padding + i * stepX;
+      const y2 = height - padding - ((curr - yMin) / (yMax - yMin)) * (height - 2 * padding);
+
+      ctx.strokeStyle = `rgb(${colorScale((prev+curr)/2).join(' ')})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+  }
+
+  maplibregl.addProtocol('cog', MaplibreCOGProtocol.cogProtocol);
+
   let map = new maplibregl.Map({
     container: 'map',
     style: 'https://geoserveis.icgc.cat/contextmaps/icgc_orto_estandard.json',
@@ -39,43 +148,6 @@
     zoom: 16,
     hash: true
   });
-
-  const url = "./data/timeseries.tif";
-
-  const colorScale = MaplibreCOGProtocol.colorScale({colorScheme: 'BrewerRdYlBu10', min: 1, max: 7, isContinuous: true, isReverse: true});
-
-  const showBand = i => MaplibreCOGProtocol.setColorFunction(url, (pixel, color) => {
-    const value = pixel[i];
-    if (value === -9999) {
-      color[0] = color[1] = color[2] = color[3] = 0;
-    } else {
-      const [r, g, b] = colorScale(value);
-      color[0] = r;
-      color[1] = g;
-      color[2] = b;
-      color[3] = 255;
-    }
-  });
-
-  let b = 0;
-  let t = performance.now();
-  setInterval(() => {
-    console.log('Animation took', performance.now() - t, ' ms');
-    t = performance.now();
-    b = b + 10;
-    if(b > 100) b = 0;
-    showBand(b);
-    if (map.getLayer('imageLayer')) {
-      map.removeLayer('imageLayer');
-      map.addLayer({
-        source: 'imageSource',
-        id: 'imageLayer',
-        type: 'raster'
-      });
-    }
-  }, 500);
-
-  maplibregl.addProtocol('cog', MaplibreCOGProtocol.cogProtocol);
 
   map.on('load', () => {
     map.addSource('imageSource', {
@@ -89,27 +161,40 @@
       id: 'imageLayer',
       type: 'raster'
     });
+
+    map.once('idle', () => {
+      document.getElementById('loading').style.display = 'none';
+      setInterval(() => {
+        b = (b + 1) % 127;
+        showBand(b);
+        if (map.getLayer('imageLayer')) {
+          map.removeLayer('imageLayer');
+          map.addLayer({
+            source: 'imageSource',
+            id: 'imageLayer',
+            type: 'raster'
+          });
+          drawChart();
+        }
+      }, 200);
+    });
+
   });
 
-  map.on('drag', () => document.getElementById('info').style.display = 'none');
-
   map.on('mousemove', (e) => {
-    const {lngLat: {lat: latitude, lng: longitude}, point: {x, y}} = e;
+    const {lngLat: {lat: latitude, lng: longitude}} = e;
     const zoom = map.getZoom();
-
-    document.getElementById('info').style.left = x + 10 + 'px';
-    document.getElementById('info').style.top = y + 20 + 'px';
 
     MaplibreCOGProtocol.locationValues(url, {latitude, longitude}, zoom)
       .then(pixel => {
-        if (isNaN(pixel[b])) {
+        if (pixel.every(v => isNaN(v))) {
           map.getCanvas().style.cursor = '';
-          document.getElementById('info').style.display = 'none';
+          chartData = [];
         } else {
-          map.getCanvas().style.cursor = 'default';
-          document.getElementById('info').style.display = 'block';
-          document.getElementById('info').innerHTML = `Value: <b>${Math.round(pixel[b] * 100)/100}</b>`;
+          map.getCanvas().style.cursor = 'crosshair';
+          chartData = pixel;
         }
+        drawChart();
       });
   });
 
