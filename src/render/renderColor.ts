@@ -1,16 +1,17 @@
-import {CogMetadata, ImageRenderer} from '../types';
+import {CogMetadata, ImageRenderer, TypedArray} from '../types';
 import {colorScale, ColorScaleParams} from './colorScale';
+import {TILE_SIZE} from '../constants';
 
 type Options = CogMetadata & {colorScale: ColorScaleParams};
 
-const renderColor: ImageRenderer<Options> = (data, {offset, scale, noData, colorScale: colorScaleParams}) => {
-  const band = data[0];
-  const pixels = band.length;
+const renderColor: ImageRenderer<Options> = (data: TypedArray, {offset, scale, noData, colorScale: colorScaleParams}) => {
+  const pixels = TILE_SIZE * TILE_SIZE;
+  const numBands = data.length / pixels;
   const rgba = new Uint8ClampedArray(pixels * 4);
   const interpolate = colorScale(colorScaleParams);
 
   for (let i = 0; i < pixels; i++) {
-    const px = offset + band[i] * scale;
+    const px = offset + data[i * numBands] * scale;
     if (px === noData || isNaN(px) || px === Infinity) {
       rgba[4 * i] = 0;
       rgba[4 * i + 1] = 0;

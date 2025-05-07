@@ -140,7 +140,7 @@ describe('CogReader', () => {
       ],
       width: 256,
       height: 256,
-      interleave: false,
+      interleave: true,
       resampleMethod: 'nearest',
       pool: {},
       fillValue: 1

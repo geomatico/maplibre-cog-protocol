@@ -29,7 +29,7 @@ describe('colorScale', () => {
 
     expect(() =>
       colorScale({colorScheme, customColors, min, max})
-    ).toThrow('You must provide at least 2 colors');
+    ).toThrow('You must provide a colorScheme or an array of at least 2 customColors');
   });
 
   test('can generate a discrete color interpolator', () => {
