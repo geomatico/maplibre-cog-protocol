@@ -302,8 +302,3 @@ npm publish --access public
 git push origin tag vX.X.X
 npm run gh-publish  # publish examples to labs.geomatico.es
 ```
-
-### Feature wishlist
-
-1. [ ] Apply transparency mask if present (now taking 0 as the default noData value)
-3. [ ] Integrate maplibre-contour
