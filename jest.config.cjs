@@ -7,17 +7,15 @@ module.exports = {
     '^.+\\.ts?$': ['ts-jest', {
       tsconfig: 'tsconfig.test.json'
     }],
-    // quick-lru comes only as an es6 module that needs transformations as well
-    '.*node_modules/quick-lru/.*$': ['ts-jest', {
-      tsconfig: 'tsconfig.test.json'
-    }]
+    // Force transform quick-lru and any nested dependencies
+    '^.+/node_modules/(quick-lru|geotiff)/.+\\.(js|mjs)$': ['ts-jest']
   },
   moduleNameMapper: {
     '@/(.*)$': '<rootDir>/src/$1',
     '^d3-(.+)$': '<rootDir>/node_modules/d3-$1/dist/d3-$1.js'
   },
   transformIgnorePatterns: [
-    // we tell jest that quick-lru is not to be ignored, so the transformation above applies
-    '<rootDir>/node_modules/(?!quick-lru)'
+    // Allow transformation of quick-lru and geotiff
+    'node_modules/(?!(quick-lru|geotiff)/)'
   ]
 };

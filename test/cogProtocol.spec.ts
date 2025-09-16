@@ -7,6 +7,7 @@ import renderPhoto from '../src/render/renderPhoto';
 import renderTerrain from '../src/render/renderTerrain';
 import { CogMetadata, TileJSON, TypedArray } from '../src/types';
 import RendererStore from '../src/render/custom/rendererStore';
+import {ColorScaleParams} from '../src/render/colorScale';
 
 
 // Test data
@@ -85,12 +86,12 @@ describe('cogProtocol', () => {
     expect(response.data).toEqual(fakeTileJSON);
   });
 
-  test('image request url should start with \'cog://\' and end with \'{z}/{x}/{y}\'', () => {
+  test('image request url should start with \'cog://\' and end with \'{z}/{x}/{y}\'', async () => {
 
-    expect(cogProtocol({
+    await expect(cogProtocol({
       type: 'image',
       url: 'maformed_url'
-    })).rejects.toThrowError('Invalid COG protocol URL \'maformed_url\'');
+    })).rejects.toThrow('Invalid COG protocol URL \'maformed_url\'');
   });
 
 
@@ -171,7 +172,7 @@ describe('cogProtocol', () => {
       url: 'cog://file.tif#color:["#f7fcb9", "#addd8e", "#31a354"],10,20,-c/1/2/3'
     });
 
-    const expectedColorScale = {
+    const expectedColorScale: ColorScaleParams = {
       colorScheme: '',
       customColors: ['#f7fcb9', '#addd8e', '#31a354'],
       min: 10,
@@ -188,24 +189,24 @@ describe('cogProtocol', () => {
   });
 
 
-  test('image requests with #color and no params should throw an error', () => {
+  test('image requests with #color and no params should throw an error', async () => {
 
-    expect(cogProtocol({
+    await expect(cogProtocol({
       type: 'image',
       url: 'cog://file.tif#color/1/2/3'
-    })).rejects.toThrowError('Color params are not defined');
+    })).rejects.toThrow('Color params are not defined');
 
     expect(mockedCogReader).toHaveBeenCalledWith('file.tif');
     expect(mockedRenderColor).not.toHaveBeenCalled();
   });
 
 
-  test('other request types should throw an error', () => {
+  test('other request types should throw an error', async () => {
 
-    expect(cogProtocol({
+    await expect(cogProtocol({
       type: 'string',
       url: 'cog://file.tif'
-    })).rejects.toThrowError('Unsupported request type \'string\'');
+    })).rejects.toThrow('Unsupported request type \'string\'');
   });
 
 });
