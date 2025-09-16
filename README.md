@@ -225,6 +225,18 @@ Some other interesting usages:
 * Combine bands of a multispectral image to calculate indicators on the fly.
 
 
+### [unstable] Get COG metadata
+
+Use the `getCogMetadata(url)` to obtain metadata about a COG file. Some interesting information it provides:
+offset, scale, noData value (for the first band), bbox. It also exposes some other internals that may change
+in future releases, so use with caution.
+
+It returns a promise. Usage example:
+
+```javascript
+MaplibreCOGProtocol.getCogMetadata(url).then(metadata => console.log(metadata?.bbox));
+```
+
 
 ### Get pixel values for a given location
 

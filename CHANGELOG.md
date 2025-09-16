@@ -23,6 +23,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 
 
 
+## [0.7.0]
+
+### Added
+
+- New `getCogMetadata(url)` method.
+
+
+## [0.6.0]
+
+### Added
+
+- Export ESM modules for better integration with modern frameworks.
+
+### Changed
+
+- Updated dependencies.
+
+
 ## [0.5.0]
 
 ### Added
