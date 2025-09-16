@@ -156,6 +156,22 @@ COGs with a single band can be also converted to images applying a color ramp.
   });
 ```
 
+The syntax for the `#color` parameter is `#color:<colorScheme>,<minValue>,<maxValue>,<modifiers>`, where:
+
+* `<colorScheme>`: Mandatory parameter. One of the built-in color ramps, see the list of possible values in [Color Ramp cheatsheet](https://labs.geomatico.es/maplibre-cog-protocol/color-cheatsheet.html).
+* `<minValue>, <maxValue>`: Define the data range for color mapping, should map your data's actual range. These are required if we want predictable results, as we can't rely on COG "stats" metadata (not always provided or correctly informed) and cannot read the whole file to get them (that's the point of the library, not having to).
+* `<modifiers>`: Some characters representing additional configuration. We support:
+  * `c` continuous color interpolation (vs discrete).
+  * `-` reverse scale.
+
+Some examples:
+
+* Apply discrete `CartoEarth` ramp between 1 and 100: `#color:CartoEarth,1,100`
+* Apply continuous `BrewerYlOrRd7` ramp between -1 and 1: `#color:BrewerYlOrRd7,-1,1,c`
+* Same as above, reversed (so colors go red-orange-yellow instead of yellow-orange-red): `#color:CartoEarth,-1,1,c-`.
+
+See other usages in [examples](examples). If you need more flexibility, use a Custom Color Function.
+
 
 ### Apply a Custom Color Function to any COG
 
@@ -198,6 +214,8 @@ The following example paints values below a given threshold as red, and green ot
     type: 'raster'
   });
 ```
+
+This function will be called for each pixel, keep it as fast as possible!
 
 Some other interesting usages: 
 
