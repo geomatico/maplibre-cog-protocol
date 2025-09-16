@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maplibre COG Protocol Example</title>
+  <link rel="stylesheet" href="vanilla.css">
+  <script src="dist/index.js"></script>
+  <style>
+      #metadata {
+          display: none;
+          background: #2d2d2d;
+          border: 1px solid #bbbbbb;
+          color: #bbbbbb;
+          padding: 15px;
+          border-radius: 5px;
+          font-family: monospace;
+          font-size: 13px;
+          white-space: pre-wrap;
+          overflow-x: auto;
+          max-width: 100%;
+          margin-bottom: 20px;
+      }
+
+      .input-row {
+          display: flex;
+          gap: 20px;
+          margin-bottom: 20px;
+          align-items: center;
+      }
+
+      .input-row input {
+          flex: 1;
+          padding: 4px;
+      }
+
+      .input-row button {
+          padding: 8px;
+          text-transform: capitalize;
+          font-size: 18px;
+      }
+
+  </style>
+</head>
+<body>
+<h1>Maplibre COG Protocol</h1>
+<h2>Read COG Metadata</h2>
+<label for="urlInput">Enter a valid COG URL to read its metadata:</label>
+<div class="input-row">
+  <input type="text" id="urlInput" placeholder="Enter URL here..." value="./data/image.tif" autofocus/>
+  <button onclick="readMetadata()">read metadata</button>
+</div>
+
+<div id="metadata"></div>
+<script>
+
+  function readMetadata() {
+    const urlInput = document.getElementById('urlInput');
+    const url = urlInput.value.trim();
+
+    if (!url) {
+      alert('Please enter a URL');
+      return;
+    }
+
+    document.getElementById('metadata').style.display = 'none';
+    MaplibreCOGProtocol.getCogMetadata(url).then(metadata => {
+      document.getElementById('metadata').innerHTML = JSON.stringify(metadata, null, 2);
+      document.getElementById('metadata').style.display = 'block';
+    }).catch(error => {
+      document.getElementById('metadata').textContent = error.stack;
+      document.getElementById('metadata').style.display = 'block';
+    });
+  }
+
+</script>
+</body>
+</html>

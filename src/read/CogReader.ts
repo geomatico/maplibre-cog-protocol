@@ -120,4 +120,6 @@ const CogReader = (url: string) => {
   return {getTilejson, getMetadata, getRawTile};
 };
 
+export const getCogMetadata = (url: string) => CogReader(url).getMetadata();
+
 export default CogReader;
