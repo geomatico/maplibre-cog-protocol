@@ -15,11 +15,11 @@ export enum PhotometricInterpretations {
 
 type Options = CogMetadata;
 
-export const renderPhoto: ImageRenderer<Options> = (raster: TypedArray, {noData, photometricInterpretation, bitsPerSample, colorMap}): Uint8ClampedArray => {
+export const renderPhoto: ImageRenderer<Options> = (raster: TypedArray, {noData, photometricInterpretation, bitsPerSample, colorMap}): Uint8ClampedArray<ArrayBuffer> => {
   const max = bitsPerSample && bitsPerSample[0] ? 2 ** bitsPerSample[0] : NaN;
   const transparentValue = noData ?? 0; // TODO defaulting to 0 may render some good black pixels transparent.
 
-  let data: Uint8ClampedArray;
+  let data: Uint8ClampedArray<ArrayBuffer>;
   switch (photometricInterpretation) {
   case PhotometricInterpretations.WhiteIsZero:
     data = rgba.fromWhiteIsZero(raster, max, transparentValue);

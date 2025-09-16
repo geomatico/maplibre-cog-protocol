@@ -31,7 +31,7 @@ const renderTile = async (url: string) => {
   const rawTile = await cog.getRawTile({z, x, y});
   const metadata = await cog.getMetadata();
 
-  let rgba: Uint8ClampedArray;
+  let rgba: Uint8ClampedArray<ArrayBuffer>;
 
   const renderCustom = CustomRendererStore.get(cogUrl);
   if (renderCustom !== undefined) {

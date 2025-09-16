@@ -5,7 +5,7 @@ const numPixels = TILE_SIZE * TILE_SIZE;
 
 const numBands = (data: TypedArray): number => data.length / numPixels;
 
-export function fromWhiteIsZero(data: TypedArray, max: number, transparentValue: number): Uint8ClampedArray {
+export function fromWhiteIsZero(data: TypedArray, max: number, transparentValue: number): Uint8ClampedArray<ArrayBuffer> {
   const rgba = new Uint8ClampedArray(numPixels * 4);
   const bands = numBands(data);
   let value;
@@ -19,7 +19,7 @@ export function fromWhiteIsZero(data: TypedArray, max: number, transparentValue:
   return rgba;
 }
 
-export function fromBlackIsZero(data: TypedArray, max: number, transparentValue: number): Uint8ClampedArray {
+export function fromBlackIsZero(data: TypedArray, max: number, transparentValue: number): Uint8ClampedArray<ArrayBuffer> {
   const rgba = new Uint8ClampedArray(numPixels * 4);
   const bands = numBands(data);
   let value;
@@ -33,7 +33,7 @@ export function fromBlackIsZero(data: TypedArray, max: number, transparentValue:
   return rgba;
 }
 
-export function fromRGB(data: TypedArray, transparentValue: number): Uint8ClampedArray {
+export function fromRGB(data: TypedArray, transparentValue: number): Uint8ClampedArray<ArrayBuffer> {
   const rgba = new Uint8ClampedArray(numPixels * 4);
   const bands = numBands(data);
   for (let i = 0; i < numPixels; i++) {
@@ -45,7 +45,7 @@ export function fromRGB(data: TypedArray, transparentValue: number): Uint8Clampe
   return rgba;
 }
 
-export function fromPalette(data: TypedArray, colorMap: Array<number>, transparentValue: number): Uint8ClampedArray {
+export function fromPalette(data: TypedArray, colorMap: Array<number>, transparentValue: number): Uint8ClampedArray<ArrayBuffer> {
   const rgba = new Uint8ClampedArray(numPixels * 4);
   const bands = numBands(data);
   const greenOffset = colorMap.length / 3;
@@ -60,7 +60,7 @@ export function fromPalette(data: TypedArray, colorMap: Array<number>, transpare
   return rgba;
 }
 
-export function fromCMYK(data: TypedArray, transparentValue: number): Uint8ClampedArray {
+export function fromCMYK(data: TypedArray, transparentValue: number): Uint8ClampedArray<ArrayBuffer> {
   const rgba = new Uint8ClampedArray(numPixels * 4);
   const bands = numBands(data);
   for (let i = 0; i < data.length; i++) {
@@ -77,7 +77,7 @@ export function fromCMYK(data: TypedArray, transparentValue: number): Uint8Clamp
   return rgba;
 }
 
-export function fromYCbCr(data: TypedArray, transparentValue: number): Uint8ClampedArray {
+export function fromYCbCr(data: TypedArray, transparentValue: number): Uint8ClampedArray<ArrayBuffer> {
   const rgba = new Uint8ClampedArray(numPixels * 4);
   const bands = numBands(data);
   for (let i = 0; i < numPixels; i++) {
@@ -99,7 +99,7 @@ const Zn = 1.08883;
 
 // from https://github.com/antimatter15/rgb-lab/blob/master/color.js
 
-export function fromCIELab(data: TypedArray, transparentValue: number): Uint8ClampedArray {
+export function fromCIELab(data: TypedArray, transparentValue: number): Uint8ClampedArray<ArrayBuffer> {
   const rgba = new Uint8ClampedArray(numPixels);
   const bands = numBands(data);
 

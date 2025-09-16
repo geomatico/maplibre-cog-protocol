@@ -44,7 +44,7 @@ export type ImageMetadata = {
 
 export type TypedArray = Uint8Array | Int8Array | Uint16Array | Int16Array | Uint32Array | Int32Array | Float32Array | Float64Array;
 
-export type ImageRenderer <T extends object> = (data: TypedArray, options: T) => Uint8ClampedArray;
+export type ImageRenderer <T extends object> = (data: TypedArray, options: T) => Uint8ClampedArray<ArrayBuffer>;
 
 export type Location = {
   latitude: number,

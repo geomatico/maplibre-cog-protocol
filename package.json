@@ -15,15 +15,19 @@
     "build": "npm run lint && npm run test && rimraf dist && concurrently --names 'UMD,ESM,TYPES' 'npm run build:umd' 'npm run build:esm' 'npm run build:types'",
     "gh-publish": "rimraf examples/dist && npm run build && cp -r dist examples && gh-pages -d examples"
   },
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
   "files": [
     "dist"
   ],
-  "license": "MIT",
   "exports": {
     ".": {
+      "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.js",
       "browser": "./dist/index.js",
-      "types": "./dist/types/index.d.ts"
+      "default": "./dist/index.js"
     }
   },
   "author": "Geomatico <info@geomatico.es>",
@@ -34,7 +38,7 @@
     "quick-lru": "^6.1.2"
   },
   "peerDependencies": {
-    "maplibre-gl": "^4.5.0"
+    "maplibre-gl": "^4.5.0 || ^5.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.7.0",
