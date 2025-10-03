@@ -5,4 +5,5 @@ declare const CogReader: (url: string) => {
     getRawTile: ({ z, x, y }: TileIndex, tileSize?: number) => Promise<TypedArray>;
 };
 export declare const getCogMetadata: (url: string) => Promise<CogMetadata>;
+export declare const setRequestHeaders: (headers: Record<string, string>) => void;
 export default CogReader;

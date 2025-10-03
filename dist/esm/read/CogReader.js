@@ -3,6 +3,7 @@ import QuickLRU from 'quick-lru';
 import { mercatorBboxToGeographicBbox, tileIndexToMercatorBbox, zoomFromResolution } from './math';
 const ONE_HOUR_IN_MILLISECONDS = 60 * 60 * 1000;
 let pool;
+let requestHeaders;
 const geoTiffCache = new QuickLRU({ maxSize: 16, maxAge: ONE_HOUR_IN_MILLISECONDS });
 const metadataCache = new QuickLRU({ maxSize: 16, maxAge: ONE_HOUR_IN_MILLISECONDS });
 const tileCache = new QuickLRU({ maxSize: 1024, maxAge: ONE_HOUR_IN_MILLISECONDS });
@@ -16,7 +17,7 @@ const CogReader = (url) => {
             return cachedGeoTiff;
         }
         else {
-            const geoTiff = fromUrl(url);
+            const geoTiff = fromUrl(url, requestHeaders ? { headers: requestHeaders } : undefined);
             geoTiffCache.set(url, geoTiff);
             return geoTiff;
         }
@@ -99,4 +100,7 @@ const CogReader = (url) => {
     return { getTilejson, getMetadata, getRawTile };
 };
 export const getCogMetadata = (url) => CogReader(url).getMetadata();
+export const setRequestHeaders = (headers) => {
+    requestHeaders = headers;
+};
 export default CogReader;
