@@ -27,7 +27,7 @@ const CogReader = (url: string) => {
     if (cachedGeoTiff) {
       return cachedGeoTiff;
     } else {
-      const geoTiff = fromUrl(url, {headers: requestHeaders});
+      const geoTiff = fromUrl(url, requestHeaders ? {headers: requestHeaders} : undefined);
       geoTiffCache.set(url, geoTiff);
       return geoTiff;
     }

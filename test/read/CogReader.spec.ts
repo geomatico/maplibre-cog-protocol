@@ -3,7 +3,7 @@ import {test, expect} from '@jest/globals';
 import {TypedArray} from '../../src/types';
 
 import {fromUrl, GeoTIFF, GeoTIFFImage, Pool, ReadRasterResult} from 'geotiff';
-import CogReader from '../../src/read/CogReader';
+import CogReader, {setRequestHeaders} from '../../src/read/CogReader';
 import {PhotometricInterpretations} from '../../src/render/renderPhoto';
 
 
@@ -62,6 +62,11 @@ mockedPool.mockReturnValue(fakePool);
 
 describe('CogReader', () => {
 
+  beforeEach(() => {
+    mockedPool.mockClear();
+    mockedFromUrl.mockClear();
+  });
+
   test('CogReader opens a GeoTIFF and caches it based on its URL', () => {
 
     CogReader('file.tif').getMetadata();
@@ -69,9 +74,19 @@ describe('CogReader', () => {
 
     expect(mockedPool).toHaveBeenCalledTimes(1);
     expect(mockedFromUrl).toHaveBeenCalledTimes(1);
-    expect(mockedFromUrl).toHaveBeenCalledWith('file.tif');
+    expect(mockedFromUrl).toHaveBeenCalledWith('file.tif', undefined);
   });
 
+
+  test('setRequestHeaders sets request headers when reading a GeoTIFF', () => {
+    const customHeaders = {'Authorization': 'Bearer XXXX'};
+
+    setRequestHeaders(customHeaders);
+    CogReader('file2.tif').getMetadata();
+
+    expect(mockedFromUrl).toHaveBeenCalledTimes(1);
+    expect(mockedFromUrl).toHaveBeenCalledWith('file2.tif', {headers: customHeaders});
+  });
 
   test('getMetadata returns useful GeoTIFF metadata', async () => {
 
