@@ -1,5 +1,6 @@
 import {fromUrl, GeoTIFF, Pool} from 'geotiff';
 import QuickLRU from 'quick-lru';
+import proj4 from 'proj4';
 
 import {Bbox, CogMetadata, ImageMetadata, TileIndex, TileJSON, TypedArray} from '../types';
 import {
@@ -43,7 +44,36 @@ const CogReader = (url: string) => {
       const gdalMetadata = firstImage.getGDALMetadata(0); // Metadata for first image and first sample
       const fileDirectory = firstImage.fileDirectory;
       const artist = firstImage.fileDirectory?.Artist;
-      const bbox = mercatorBboxToGeographicBbox(firstImage.getBoundingBox() as Bbox);
+      
+      const geoKeys = firstImage.getGeoKeys();
+      const epsg = geoKeys ? (geoKeys.ProjectedCSTypeGeoKey || geoKeys.GeographicTypeGeoKey) : undefined;
+
+      let bbox: Bbox;
+
+      if (epsg && epsg !== 3857 && proj4.defs(`EPSG:${epsg}`)) {
+        const fileBbox = firstImage.getBoundingBox() as Bbox;
+        const [xMin, yMin, xMax, yMax] = fileBbox;
+        
+        const corners = [
+          [xMin, yMin],
+          [xMax, yMin],
+          [xMax, yMax],
+          [xMin, yMax]
+        ];
+
+        const transformed = corners.map(c => proj4(`EPSG:${epsg}`, 'EPSG:4326', c));
+        const xs = transformed.map(c => c[0]);
+        const ys = transformed.map(c => c[1]);
+        
+        bbox = [
+          Math.min(...xs),
+          Math.min(...ys),
+          Math.max(...xs),
+          Math.max(...ys)
+        ];
+      } else {
+        bbox = mercatorBboxToGeographicBbox(firstImage.getBoundingBox() as Bbox);
+      }
 
       const imagesMetadata: Array<ImageMetadata> = [];
       const imageCount = await tiff.getImageCount();
@@ -64,7 +94,8 @@ const CogReader = (url: string) => {
         colorMap: fileDirectory?.ColorMap,
         artist: artist,
         bbox: bbox,
-        images: imagesMetadata
+        images: imagesMetadata,
+        epsg: epsg
       }
 
       // @ts-expect-error metadata will be wrapped with a Promise
@@ -96,15 +127,42 @@ const CogReader = (url: string) => {
       return cachedTile;
     } else {
       const tiff = await getGeoTiff(url);
-      const {noData} = await getMetadata();
+      const {noData, epsg} = await getMetadata();
 
       // FillValue won't accept NaN.
       // Infinity will work for Float32Array and Float64Array.
       // Int and Uint arrays will be filled with zeroes.
       const fillValue = noData === undefined || isNaN(noData) ? Infinity : noData;
 
+      let bbox = tileIndexToMercatorBbox({x, y, z});
+
+      if (epsg && epsg !== 3857) {
+        if (!proj4.defs(`EPSG:${epsg}`)) {
+          throw new Error(`Projection EPSG:${epsg} is not defined in proj4. Please register it in your application.`);
+        }
+
+        const [xMin, yMin, xMax, yMax] = bbox;
+        const corners = [
+          [xMin, yMin],
+          [xMax, yMin],
+          [xMax, yMax],
+          [xMin, yMax]
+        ];
+
+        const transformed = corners.map(c => proj4('EPSG:3857', `EPSG:${epsg}`, c));
+        const xs = transformed.map(c => c[0]);
+        const ys = transformed.map(c => c[1]);
+
+        bbox = [
+          Math.min(...xs),
+          Math.min(...ys),
+          Math.max(...xs),
+          Math.max(...ys)
+        ];
+      }
+
       const tile = tiff.readRasters({
-        bbox: tileIndexToMercatorBbox({x, y, z}),
+        bbox: bbox,
         width: tileSize,
         height: tileSize,
         interleave: true,

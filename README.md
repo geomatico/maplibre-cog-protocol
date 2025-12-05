@@ -77,6 +77,29 @@ const App = () =>
 
 ## API
 
+### Projection Support
+
+This library now supports Cloud Optimized GeoTIFFs (COGs) in projections other than Web Mercator (EPSG:3857). The protocol automatically detects the COG's projection from its GeoKeys.
+
+For projections other than EPSG:3857, you must provide the `proj4` definition string for that specific EPSG code in your application. The `proj4` library is exposed directly by this package for convenience.
+
+**Example: Registering EPSG:25832 (ETRS89 / UTM zone 32N)**
+
+```typescript
+import maplibregl from 'maplibre-gl';
+import { cogProtocol, proj4 } from '@geomatico/maplibre-cog-protocol';
+
+// Register the proj4 definition for EPSG:25832
+// You can find projection strings on sites like spatialreference.org or epsg.io
+proj4.defs("EPSG:25832", "+proj=utm +zone=32 +ellps=GRS80 +units=m +no_defs +type=crs");
+
+maplibregl.addProtocol('cog', cogProtocol);
+
+// ... your map setup ...
+```
+
+---
+
 ### Display RGB image COGs
 
 COGs with three or four 8-bit bands can be displayed as RGB or RGBA images.
@@ -96,6 +119,7 @@ COGs with three or four 8-bit bands can be displayed as RGB or RGBA images.
     type: 'raster'
   });
 ```
+
 
 ### Display Digital Elevation Model COGs
 
@@ -268,7 +292,7 @@ locationValues(url, {latitude: 41.656278, longitude: 0.501394}).then(console.log
 
 ## COG generation tips
 
-COG should be in EPSG:3857 (Google Mercator) projection, as this library doesn't reproject and won't understand any other projection.
+This library now supports COGs in various projections. If your COG is in a projection other than EPSG:3857, ensure you register its `proj4` definition in your application (see "Projection Support" section).
 
 For better performance, use the Google Maps tiling scheme with 256x256 blocksize.
 

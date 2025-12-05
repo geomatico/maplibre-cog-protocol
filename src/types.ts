@@ -33,7 +33,8 @@ export type CogMetadata = {
   colorMap?: Array<number>,
   artist?: string,
   bbox?: Bbox,
-  images: Array<ImageMetadata>
+  images: Array<ImageMetadata>,
+  epsg?: number
 }
 
 export type ImageMetadata = {
