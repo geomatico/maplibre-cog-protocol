@@ -40,18 +40,19 @@ const CogReader = (url: string) => {
     } else {
       const tiff = await getGeoTiff(url);
       const firstImage = await tiff.getImage();
-      const gdalMetadata = firstImage.getGDALMetadata(0); // Metadata for first image and first sample
+      const gdalMetadata = await firstImage.getGDALMetadata(0); // Metadata for first image and first sample
       const fileDirectory = firstImage.fileDirectory;
-      const artist = firstImage.fileDirectory?.Artist;
+      const artist = fileDirectory?.getValue("Artist");
       const bbox = mercatorBboxToGeographicBbox(firstImage.getBoundingBox() as Bbox);
 
       const imagesMetadata: Array<ImageMetadata> = [];
       const imageCount = await tiff.getImageCount();
       for (let index = 0; index < imageCount; index++) {
         const image = await tiff.getImage(index);
+        const newSubFileType = image.fileDirectory.getValue("NewSubfileType");
         const zoom = zoomFromResolution(image.getResolution(firstImage)[0]);
-        const isOverview = !!(image.fileDirectory.NewSubfileType & 1);
-        const isMask = !!(image.fileDirectory.NewSubfileType & 4);
+        const isOverview = !!(newSubFileType & 1);
+        const isMask = !!(newSubFileType & 4);
         imagesMetadata.push({zoom, isOverview, isMask});
       }
 
@@ -59,9 +60,9 @@ const CogReader = (url: string) => {
         offset: gdalMetadata?.OFFSET !== undefined ? parseFloat(gdalMetadata.OFFSET) : 0.0,
         scale: gdalMetadata?.SCALE !== undefined ? parseFloat(gdalMetadata.SCALE) : 1.0,
         noData: firstImage.getGDALNoData() ?? undefined,
-        photometricInterpretation: fileDirectory?.PhotometricInterpretation,
-        bitsPerSample: fileDirectory?.BitsPerSample,
-        colorMap: fileDirectory?.ColorMap,
+        photometricInterpretation: fileDirectory?.getValue("PhotometricInterpretation"),
+        bitsPerSample: fileDirectory?.getValue("BitsPerSample"),
+        colorMap: fileDirectory?.getValue("ColorMap"),
         artist: artist,
         bbox: bbox,
         images: imagesMetadata
