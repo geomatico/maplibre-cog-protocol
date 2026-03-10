@@ -10,5 +10,8 @@ export default {
   },
   set: (url: string, renderer: Renderer) => {
     store[url] = renderer;
+  },
+  delete: (url: string) => {
+    delete store[url];
   }
 };

@@ -21,4 +21,12 @@ describe('rendererStore', () => {
       expect(renderer(new Int8Array(), dummyMetadata)).toEqual(sampleImage);
     }
   });
+
+  test('deletes a renderer from the store', () => {
+    RendererStore.set('to_delete.tif', () => sampleImage);
+    expect(RendererStore.get('to_delete.tif')).toBeInstanceOf(Function);
+    
+    RendererStore.delete('to_delete.tif');
+    expect(RendererStore.get('to_delete.tif')).toBeUndefined();
+  });
 });
