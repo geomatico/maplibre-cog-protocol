@@ -9,27 +9,48 @@ import {PhotometricInterpretations} from '../../src/render/renderPhoto';
 
 // Test data
 
-// @ts-expect-error only implementing used properties
 const fakeFirstImage: GeoTIFFImage = {
+  // @ts-expect-error only implementing used properties
   fileDirectory: {
-    PhotometricInterpretation: PhotometricInterpretations.RGB,
-    BitsPerSample: [8, 8, 8],
-    Artist: 'Geomatico'
+    getValue: (tag: string | number) => {
+      if (tag == "BitsPerSample") {
+        return  [8, 8, 8]
+      }
+      if (tag == "Artist") {
+        return 'Geomatico';
+      }
+      if (tag == "PhotometricInterpretation") {
+        return PhotometricInterpretations.RGB;
+      }
+    }
   },
   getBoundingBox: () => [201640.881, 5098655.535, 206532.850, 5102018.764],
-  getGDALMetadata: () => ({
+  getGDALMetadata: async () => ({
     OFFSET: '1.2',
     SCALE: '3.4'
   }),
   getGDALNoData: () => 1,
+  // `as any` works around an upstream type bug in geotiff: the declared return
+  // type is `Record<GeoKeyName, any>` (all keys required), but the actual
+  // implementation builds an empty object and only populates keys that are
+  // present in the file — so the correct type is `Partial<Record<GeoKeyName, any>>`.
+  // Fixed by https://github.com/geotiffjs/geotiff.js/pull/510
+  getGeoKeys: () =>
+    ({
+      ProjectedCSTypeGeoKey: 3857
+    }) as any,
   getResolution: () => [0.29858214173896974]
 };
 
-// @ts-expect-error only implementing used properties
 const fakeOverview: GeoTIFFImage = {
   getResolution: () => [0.5971642834779395],
+  // @ts-expect-error only implementing used properties
   fileDirectory: {
-    NewSubfileType: 1 // 1 = overview, 4 = mask, 5 = overview-mask
+      getValue: (tag: string | number) => {
+      if (tag == "NewSubfileType") {
+        return  1 // 1 = overview, 4 = mask, 5 = overview-mask
+      }
+    }
   }
 };
 
