@@ -43,7 +43,13 @@ const CogReader = (url: string) => {
       const gdalMetadata = firstImage.getGDALMetadata(0); // Metadata for first image and first sample
       const fileDirectory = firstImage.fileDirectory;
       const artist = firstImage.fileDirectory?.Artist;
-      const bbox = mercatorBboxToGeographicBbox(firstImage.getBoundingBox() as Bbox);
+      const geoKeys = firstImage.getGeoKeys();
+      const isMercator =
+        geoKeys.ProjectedCSTypeGeoKey === 3857 ||
+        geoKeys.ProjectedCSTypeGeoKey === 102113;
+      const bbox = isMercator
+        ? mercatorBboxToGeographicBbox(firstImage.getBoundingBox() as Bbox)
+        : (firstImage.getBoundingBox() as Bbox);
 
       const imagesMetadata: Array<ImageMetadata> = [];
       const imageCount = await tiff.getImageCount();
