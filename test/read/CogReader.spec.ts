@@ -120,6 +120,7 @@ describe('CogReader', () => {
       scale: 3.4,
       bitsPerSample: [8, 8, 8],
       artist: 'Geomatico',
+      isMercator: true,
       bbox: [
         1.811370853056256,
         41.58257960321504,

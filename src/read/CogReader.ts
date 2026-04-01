@@ -5,6 +5,7 @@ import {Bbox, CogMetadata, ImageMetadata, TileIndex, TileJSON, TypedArray} from 
 import {
   mercatorBboxToGeographicBbox,
   tileIndexToMercatorBbox,
+  tileIndexToBbox,
   zoomFromResolution
 } from './math';
 
@@ -71,7 +72,8 @@ const CogReader = (url: string) => {
         colorMap: fileDirectory?.getValue("ColorMap"),
         artist: artist,
         bbox: bbox,
-        images: imagesMetadata
+        images: imagesMetadata,
+        isMercator: isMercator
       }
 
       // @ts-expect-error metadata will be wrapped with a Promise
@@ -103,7 +105,7 @@ const CogReader = (url: string) => {
       return cachedTile;
     } else {
       const tiff = await getGeoTiff(url);
-      const {noData} = await getMetadata();
+      const {noData, isMercator} = await getMetadata();
 
       // FillValue won't accept NaN.
       // Infinity will work for Float32Array and Float64Array.
@@ -111,7 +113,7 @@ const CogReader = (url: string) => {
       const fillValue = noData === undefined || isNaN(noData) ? Infinity : noData;
 
       const tile = tiff.readRasters({
-        bbox: tileIndexToMercatorBbox({x, y, z}),
+        bbox: isMercator ? tileIndexToMercatorBbox({x, y, z}) : tileIndexToBbox({x, y, z}),
         width: tileSize,
         height: tileSize,
         interleave: true,

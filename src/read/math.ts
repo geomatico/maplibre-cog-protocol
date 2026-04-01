@@ -13,8 +13,18 @@ const merc = new SphericalMercator({
 export const tileIndexToMercatorBbox = ({x, y, z}: TileIndex): Bbox =>
   merc.bbox(x, y, z, false, '900913');
 
-export const mercatorBboxToGeographicBbox = ([xMin, yMin, xMax, yMax]: Bbox): Bbox =>
-  ([...merc.inverse([xMin, yMin]), ...merc.inverse([xMax, yMax])]);
+export const tileIndexToBbox = ({ x, y, z }: TileIndex): Bbox =>
+  merc.bbox(x, y, z);
+
+export const mercatorBboxToGeographicBbox = ([
+  xMin,
+  yMin,
+  xMax,
+  yMax,
+]: Bbox): Bbox => [
+  ...merc.inverse([xMin, yMin]),
+  ...merc.inverse([xMax, yMax]),
+];
 
 export const zoomFromResolution = (res: number): number =>
   Math.log2(MAX_EXTENT / (TILE_SIZE * res));

@@ -25,16 +25,17 @@ export type TileIndex = {
 export type Bbox = [number, number, number, number];
 
 export type CogMetadata = {
-  offset: number,
-  scale: number,
-  noData?: number,
-  photometricInterpretation?: number
-  bitsPerSample?: Array<number>,
-  colorMap?: Array<number>,
-  artist?: string,
-  bbox?: Bbox,
-  images: Array<ImageMetadata>
-}
+  offset: number;
+  scale: number;
+  noData?: number;
+  photometricInterpretation?: number;
+  bitsPerSample?: Array<number>;
+  colorMap?: Array<number>;
+  artist?: string;
+  bbox?: Bbox;
+  images: Array<ImageMetadata>;
+  isMercator?: boolean;
+};
 
 export type ImageMetadata = {
   zoom: number,
