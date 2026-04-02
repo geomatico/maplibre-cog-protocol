@@ -1,22 +1,39 @@
-import {fromUrl, GeoTIFF, Pool} from 'geotiff';
-import QuickLRU from 'quick-lru';
+import { fromUrl, GeoTIFF, Pool } from "geotiff";
+import QuickLRU from "quick-lru";
 
-import {Bbox, CogMetadata, ImageMetadata, TileIndex, TileJSON, TypedArray} from '../types';
+import {
+  Bbox,
+  CogMetadata,
+  ImageMetadata,
+  TileIndex,
+  TileJSON,
+  TypedArray,
+} from "../types";
 import {
   mercatorBboxToGeographicBbox,
   tileIndexToMercatorBbox,
   tileIndexToBbox,
-  zoomFromResolution
-} from './math';
+  zoomFromResolution,
+  zoomFromResolutionGeographic,
+} from "./math";
 
 const ONE_HOUR_IN_MILLISECONDS = 60 * 60 * 1000;
 
 let pool: Pool;
 let requestHeaders: Record<string, string> | undefined;
 
-const geoTiffCache = new QuickLRU<string, Promise<GeoTIFF>>({maxSize: 16, maxAge: ONE_HOUR_IN_MILLISECONDS});
-const metadataCache = new QuickLRU<string, Promise<CogMetadata>>({maxSize: 16, maxAge: ONE_HOUR_IN_MILLISECONDS});
-const tileCache = new QuickLRU<string, Promise<TypedArray>>({maxSize: 1024, maxAge: ONE_HOUR_IN_MILLISECONDS});
+const geoTiffCache = new QuickLRU<string, Promise<GeoTIFF>>({
+  maxSize: 16,
+  maxAge: ONE_HOUR_IN_MILLISECONDS,
+});
+const metadataCache = new QuickLRU<string, Promise<CogMetadata>>({
+  maxSize: 16,
+  maxAge: ONE_HOUR_IN_MILLISECONDS,
+});
+const tileCache = new QuickLRU<string, Promise<TypedArray>>({
+  maxSize: 1024,
+  maxAge: ONE_HOUR_IN_MILLISECONDS,
+});
 
 const CogReader = (url: string) => {
   if (pool === undefined) {
@@ -28,11 +45,14 @@ const CogReader = (url: string) => {
     if (cachedGeoTiff) {
       return cachedGeoTiff;
     } else {
-      const geoTiff = fromUrl(url, requestHeaders ? {headers: requestHeaders} : undefined);
+      const geoTiff = fromUrl(
+        url,
+        requestHeaders ? { headers: requestHeaders } : undefined,
+      );
       geoTiffCache.set(url, geoTiff);
       return geoTiff;
     }
-  }
+  };
 
   const getMetadata = async (): Promise<CogMetadata> => {
     const cachedMetadata = metadataCache.get(url);
@@ -57,24 +77,34 @@ const CogReader = (url: string) => {
       for (let index = 0; index < imageCount; index++) {
         const image = await tiff.getImage(index);
         const newSubFileType = image.fileDirectory.getValue("NewSubfileType");
-        const zoom = zoomFromResolution(image.getResolution(firstImage)[0]);
+        const zoom = isMercator
+          ? zoomFromResolution(image.getResolution(firstImage)[0])
+          : zoomFromResolutionGeographic(image.getResolution(firstImage)[0]);
         const isOverview = !!(newSubFileType & 1);
         const isMask = !!(newSubFileType & 4);
-        imagesMetadata.push({zoom, isOverview, isMask});
+        imagesMetadata.push({ zoom, isOverview, isMask });
       }
 
       const metadata = {
-        offset: gdalMetadata?.OFFSET !== undefined ? parseFloat(gdalMetadata.OFFSET) : 0.0,
-        scale: gdalMetadata?.SCALE !== undefined ? parseFloat(gdalMetadata.SCALE) : 1.0,
+        offset:
+          gdalMetadata?.OFFSET !== undefined
+            ? parseFloat(gdalMetadata.OFFSET)
+            : 0.0,
+        scale:
+          gdalMetadata?.SCALE !== undefined
+            ? parseFloat(gdalMetadata.SCALE)
+            : 1.0,
         noData: firstImage.getGDALNoData() ?? undefined,
-        photometricInterpretation: fileDirectory?.getValue("PhotometricInterpretation"),
+        photometricInterpretation: fileDirectory?.getValue(
+          "PhotometricInterpretation",
+        ),
         bitsPerSample: fileDirectory?.getValue("BitsPerSample"),
         colorMap: fileDirectory?.getValue("ColorMap"),
         artist: artist,
         bbox: bbox,
         images: imagesMetadata,
-        isMercator: isMercator
-      }
+        isMercator: isMercator,
+      };
 
       // @ts-expect-error metadata will be wrapped with a Promise
       metadataCache.set(url, metadata);
@@ -84,42 +114,49 @@ const CogReader = (url: string) => {
   };
 
   const getTilejson = async (fullUrl: string): Promise<TileJSON> => {
-    const {artist, images, bbox} = await getMetadata();
+    const { artist, images, bbox } = await getMetadata();
 
-    const zooms = images.map(image => image.zoom);
+    const zooms = images.map((image) => image.zoom);
 
     return {
-      tilejson: '2.2.0',
-      tiles: [fullUrl + '/{z}/{x}/{y}'],
+      tilejson: "2.2.0",
+      tiles: [fullUrl + "/{z}/{x}/{y}"],
       attribution: artist,
       minzoom: Math.round(Math.min(...zooms)),
       maxzoom: Math.round(Math.max(...zooms)),
-      bounds: bbox
+      bounds: bbox,
     };
   };
 
-  const getRawTile = async ({z, x, y}: TileIndex, tileSize: number = 256): Promise<TypedArray> => {
+  const getRawTile = async (
+    { z, x, y }: TileIndex,
+    tileSize: number = 256,
+  ): Promise<TypedArray> => {
     const key = `${url}/${tileSize}/${z}/${x}/${y}`;
     const cachedTile = tileCache.get(key);
     if (cachedTile) {
       return cachedTile;
     } else {
       const tiff = await getGeoTiff(url);
-      const {noData, isMercator} = await getMetadata();
+      const { noData, isMercator } = await getMetadata();
 
       // FillValue won't accept NaN.
       // Infinity will work for Float32Array and Float64Array.
       // Int and Uint arrays will be filled with zeroes.
-      const fillValue = noData === undefined || isNaN(noData) ? Infinity : noData;
+      const fillValue =
+        noData === undefined || isNaN(noData) ? Infinity : noData;
 
+      const bbox = isMercator
+        ? tileIndexToMercatorBbox({ x, y, z })
+        : tileIndexToBbox({ x, y, z });
       const tile = tiff.readRasters({
-        bbox: isMercator ? tileIndexToMercatorBbox({x, y, z}) : tileIndexToBbox({x, y, z}),
+        bbox: bbox,
         width: tileSize,
         height: tileSize,
         interleave: true,
-        resampleMethod: 'nearest',
+        resampleMethod: "nearest",
         pool,
-        fillValue // When fillValue is Infinity, integer types will be filled with a 0 value.
+        fillValue, // When fillValue is Infinity, integer types will be filled with a 0 value.
       }) as Promise<TypedArray>; // ReadRasterResult extends TypedArray
 
       tileCache.set(key, tile);
@@ -127,13 +164,13 @@ const CogReader = (url: string) => {
     }
   };
 
-  return {getTilejson, getMetadata, getRawTile};
+  return { getTilejson, getMetadata, getRawTile };
 };
 
 export const getCogMetadata = (url: string) => CogReader(url).getMetadata();
 
 export const setRequestHeaders = (headers: Record<string, string>) => {
   requestHeaders = headers;
-}
+};
 
 export default CogReader;
