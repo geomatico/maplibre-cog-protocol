@@ -40,28 +40,31 @@ const CogReader = (url: string) => {
     } else {
       const tiff = await getGeoTiff(url);
       const firstImage = await tiff.getImage();
-      const gdalMetadata = firstImage.getGDALMetadata(0); // Metadata for first image and first sample
+      const gdalMetadata = await firstImage.getGDALMetadata(0); // Metadata for first image and first sample
       const fileDirectory = firstImage.fileDirectory;
-      const artist = firstImage.fileDirectory?.Artist;
+      const artist = await fileDirectory?.loadValue("Artist");
+      const rawBitsPerSample = await fileDirectory?.loadValue("BitsPerSample");
+      const rawColorMap = await fileDirectory?.loadValue("ColorMap");
       const bbox = mercatorBboxToGeographicBbox(firstImage.getBoundingBox() as Bbox);
 
       const imagesMetadata: Array<ImageMetadata> = [];
       const imageCount = await tiff.getImageCount();
       for (let index = 0; index < imageCount; index++) {
         const image = await tiff.getImage(index);
+        const newSubFileType = (await image.fileDirectory.loadValue("NewSubfileType")) ?? 0;
         const zoom = zoomFromResolution(image.getResolution(firstImage)[0]);
-        const isOverview = !!(image.fileDirectory.NewSubfileType & 1);
-        const isMask = !!(image.fileDirectory.NewSubfileType & 4);
+        const isOverview = !!(newSubFileType & 1);
+        const isMask = !!(newSubFileType & 4);
         imagesMetadata.push({zoom, isOverview, isMask});
       }
 
       const metadata = {
-        offset: gdalMetadata?.OFFSET !== undefined ? parseFloat(gdalMetadata.OFFSET) : 0.0,
-        scale: gdalMetadata?.SCALE !== undefined ? parseFloat(gdalMetadata.SCALE) : 1.0,
+        offset: gdalMetadata && typeof gdalMetadata.OFFSET === 'string' ? parseFloat(gdalMetadata.OFFSET) : 0.0,
+        scale: gdalMetadata && typeof gdalMetadata.SCALE === 'string' ? parseFloat(gdalMetadata.SCALE) : 1.0,
         noData: firstImage.getGDALNoData() ?? undefined,
-        photometricInterpretation: fileDirectory?.PhotometricInterpretation,
-        bitsPerSample: fileDirectory?.BitsPerSample,
-        colorMap: fileDirectory?.ColorMap,
+        photometricInterpretation: await fileDirectory?.loadValue("PhotometricInterpretation"),
+        bitsPerSample: rawBitsPerSample ? Array.from(rawBitsPerSample) : undefined,
+        colorMap: rawColorMap ? Array.from(rawColorMap) : undefined,
         artist: artist,
         bbox: bbox,
         images: imagesMetadata
@@ -103,6 +106,7 @@ const CogReader = (url: string) => {
       // Int and Uint arrays will be filled with zeroes.
       const fillValue = noData === undefined || isNaN(noData) ? Infinity : noData;
 
+      // We want to cache and return the promise, not await for it
       const tile = tiff.readRasters({
         bbox: tileIndexToMercatorBbox({x, y, z}),
         width: tileSize,
@@ -111,7 +115,7 @@ const CogReader = (url: string) => {
         resampleMethod: 'nearest',
         pool,
         fillValue // When fillValue is Infinity, integer types will be filled with a 0 value.
-      }) as Promise<TypedArray>; // ReadRasterResult extends TypedArray
+      }) as Promise<TypedArray>; // interleaved ReadRasterResult is always a single TypedArray
 
       tileCache.set(key, tile);
       return tile;
