@@ -1,4 +1,4 @@
-import {test, expect} from '@jest/globals';
+import {test, expect} from 'vitest';
 
 import {TypedArray} from '../../src/types';
 
@@ -11,7 +11,7 @@ import {PhotometricInterpretations} from '../../src/render/renderPhoto';
 
 const fakeFirstImage = {
   fileDirectory: {
-    loadValue: jest.fn(async (tag: string | number) => {
+    loadValue: vi.fn(async (tag: string | number) => {
       if (tag === "Artist") return 'Geomatico';
       if (tag === "BitsPerSample") return [8, 8, 8];
       if (tag === "PhotometricInterpretation") return PhotometricInterpretations.RGB;
@@ -29,7 +29,7 @@ const fakeFirstImage = {
 const fakeOverview = {
   getResolution: () => [0.5971642834779395],
   fileDirectory: {
-    loadValue: jest.fn(async (tag: string | number) => {
+    loadValue: vi.fn(async (tag: string | number) => {
       if (tag === "NewSubfileType") return 1; // 1 = overview, 4 = mask, 5 = overview-mask
       return undefined;
     }),
@@ -40,7 +40,7 @@ const fakeGeoTIFF: GeoTIFF = {
   // @ts-expect-error partial mock — fakeFirstImage/fakeOverview don't implement GeoTIFFImage fully
   getImage: (index?: number) => Promise.resolve(index === 1 ? fakeOverview : fakeFirstImage),
   getImageCount: () => Promise.resolve(2), // A base image and an overview
-  readRasters: jest.fn(() => Promise.resolve(fakeReadRasterResult)),
+  readRasters: vi.fn(() => Promise.resolve(fakeReadRasterResult)),
 };
 
 const fakeRawTile: TypedArray[] = [
@@ -53,14 +53,14 @@ const fakeReadRasterResult: ReadRasterResult = fakeRawTile as ReadRasterResult;
 
 
 // Mocks
-jest.mock('geotiff');
-const mockedFromUrl = jest.mocked(fromUrl);
+vi.mock('geotiff');
+const mockedFromUrl = vi.mocked(fromUrl);
 mockedFromUrl.mockReturnValue(Promise.resolve(fakeGeoTIFF));
 
 const fakePool = {} as Pool;
 
-const mockedPool = jest.mocked(Pool);
-mockedPool.mockReturnValue(fakePool);
+const mockedPool = vi.mocked(Pool);
+mockedPool.mockImplementation(function() { return fakePool; });
 
 
 describe('CogReader', () => {

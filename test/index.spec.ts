@@ -1,4 +1,4 @@
-import {test, expect} from '@jest/globals';
+import {test, expect} from 'vitest';
 
 import {cogProtocol, colorScale, colorSchemeNames, setColorFunction, setMask, clearMask, locationValues} from '../src/index';
 

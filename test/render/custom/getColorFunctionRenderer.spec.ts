@@ -1,4 +1,4 @@
-import {test, expect} from '@jest/globals';
+import {test, expect} from 'vitest';
 
 import getColorFunctionRenderer from '../../../src/render/custom/getColorFunctionRenderer';
 import { TypedArray } from '../../../src/types';

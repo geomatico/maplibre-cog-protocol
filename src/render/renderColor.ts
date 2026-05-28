@@ -1,10 +1,13 @@
-import {CogMetadata, ImageRenderer, TypedArray} from '../types';
-import {colorScale, ColorScaleParams} from './colorScale';
 import {TILE_SIZE} from '../constants';
+import type {CogMetadata, ImageRenderer, TypedArray} from '../types';
+import {type ColorScaleParams, colorScale} from './colorScale';
 
 type Options = CogMetadata & {colorScale: ColorScaleParams};
 
-const renderColor: ImageRenderer<Options> = (data: TypedArray, {offset, scale, noData, colorScale: colorScaleParams}) => {
+const renderColor: ImageRenderer<Options> = (
+  data: TypedArray,
+  {offset, scale, noData, colorScale: colorScaleParams},
+) => {
   const pixels = TILE_SIZE * TILE_SIZE;
   const numBands = data.length / pixels;
   const rgba = new Uint8ClampedArray(pixels * 4);
@@ -12,7 +15,7 @@ const renderColor: ImageRenderer<Options> = (data: TypedArray, {offset, scale, n
 
   for (let i = 0; i < pixels; i++) {
     const px = offset + data[i * numBands] * scale;
-    if (px === noData || isNaN(px) || px === Infinity) {
+    if (px === noData || Number.isNaN(px) || px === Infinity) {
       rgba[4 * i] = 0;
       rgba[4 * i + 1] = 0;
       rgba[4 * i + 2] = 0;
@@ -26,6 +29,6 @@ const renderColor: ImageRenderer<Options> = (data: TypedArray, {offset, scale, n
     }
   }
   return rgba;
-}
+};
 
 export default renderColor;

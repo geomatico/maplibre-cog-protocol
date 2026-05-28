@@ -1,4 +1,4 @@
-import {CogMetadata, ImageRenderer} from '../../types';
+import type {CogMetadata, ImageRenderer} from '../../types';
 
 type Renderer = ImageRenderer<CogMetadata>;
 
@@ -13,5 +13,5 @@ export default {
   },
   delete: (url: string) => {
     delete store[url];
-  }
+  },
 };

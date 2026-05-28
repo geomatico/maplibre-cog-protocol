@@ -1,5 +1,5 @@
-import { TILE_SIZE } from '../constants';
-import {CogMetadata, ImageRenderer, TypedArray} from '../types';
+import {TILE_SIZE} from '../constants';
+import type {CogMetadata, ImageRenderer, TypedArray} from '../types';
 
 type Options = CogMetadata;
 
@@ -13,7 +13,7 @@ const renderTerrain: ImageRenderer<Options> = (data: TypedArray, {offset, scale,
 
   for (let i = 0; i < pixels; i++) {
     const px = offset + data[i * numBands] * scale;
-    const h = px == noData ? 0 : px;
+    const h = px === noData ? 0 : px;
     const v = (h - base) / interval;
     rgba[4 * i] = Math.floor(v / 256 / 256) % 256;
     rgba[4 * i + 1] = Math.floor(v / 256) % 256;
@@ -22,6 +22,6 @@ const renderTerrain: ImageRenderer<Options> = (data: TypedArray, {offset, scale,
   }
 
   return rgba;
-}
+};
 
 export default renderTerrain;
