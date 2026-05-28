@@ -1,8 +1,8 @@
 import SphericalMercator from '@mapbox/sphericalmercator';
-import {FeatureCollection, Geometry} from 'geojson';
+import type {FeatureCollection, Geometry} from 'geojson';
 
 import {TILE_SIZE} from '../constants';
-import {TileIndex} from '../types';
+import type {TileIndex} from '../types';
 
 const merc = new SphericalMercator({size: TILE_SIZE, antimeridian: true});
 
@@ -30,7 +30,8 @@ export const applyMask = (rgba: Uint8ClampedArray, tileIndex: TileIndex): void =
   if (!_mask || typeof OffscreenCanvas === 'undefined') return;
 
   const canvas = new OffscreenCanvas(TILE_SIZE, TILE_SIZE);
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
 
   const imageData = ctx.createImageData(TILE_SIZE, TILE_SIZE);
   imageData.data.set(rgba);

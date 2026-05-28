@@ -1,12 +1,12 @@
-import {fromUrl, GeoTIFF, Pool} from 'geotiff';
+import {fromUrl, type GeoTIFF, Pool} from 'geotiff';
 import QuickLRU from 'quick-lru';
 
-import {Bbox, CogMetadata, ImageMetadata, TileIndex, TileJSON, TypedArray} from '../types';
+import type {Bbox, CogMetadata, ImageMetadata, TileIndex, TileJSON, TypedArray} from '../types';
 import {
   mercatorBboxToGeographicBbox,
   tileIndexToMercatorBbox,
   tileIndexToPixelWindow,
-  zoomFromResolution
+  zoomFromResolution,
 } from './math';
 
 const ONE_HOUR_IN_MILLISECONDS = 60 * 60 * 1000;
@@ -17,7 +17,10 @@ let requestHeaders: Record<string, string> | undefined;
 const geoTiffCache = new QuickLRU<string, Promise<GeoTIFF>>({maxSize: 16, maxAge: ONE_HOUR_IN_MILLISECONDS});
 const metadataCache = new QuickLRU<string, Promise<CogMetadata>>({maxSize: 16, maxAge: ONE_HOUR_IN_MILLISECONDS});
 const tileCache = new QuickLRU<string, Promise<TypedArray>>({maxSize: 1024, maxAge: ONE_HOUR_IN_MILLISECONDS});
-const maskTileCache = new QuickLRU<string, Promise<TypedArray | null>>({maxSize: 1024, maxAge: ONE_HOUR_IN_MILLISECONDS});
+const maskTileCache = new QuickLRU<string, Promise<TypedArray | null>>({
+  maxSize: 1024,
+  maxAge: ONE_HOUR_IN_MILLISECONDS,
+});
 
 const CogReader = (url: string) => {
   if (pool === undefined) {
@@ -33,7 +36,7 @@ const CogReader = (url: string) => {
       geoTiffCache.set(url, geoTiff);
       return geoTiff;
     }
-  }
+  };
 
   const getMetadata = async (): Promise<CogMetadata> => {
     const cachedMetadata = metadataCache.get(url);
@@ -45,21 +48,23 @@ const CogReader = (url: string) => {
 
       const projectedCSType = firstImage.getGeoKeys()?.ProjectedCSTypeGeoKey;
       if (projectedCSType !== undefined && projectedCSType !== 3857 && projectedCSType !== 102113) {
-        throw new Error(`COG projection EPSG:${projectedCSType} in ${url} is not supported. Reproject to EPSG:3857 (Web Mercator).`);
+        throw new Error(
+          `COG projection EPSG:${projectedCSType} in ${url} is not supported. Reproject to EPSG:3857 (Web Mercator).`,
+        );
       }
 
       const gdalMetadata = await firstImage.getGDALMetadata(0); // Metadata for first image and first sample
       const fileDirectory = firstImage.fileDirectory;
-      const artist = await fileDirectory?.loadValue("Artist");
-      const rawBitsPerSample = await fileDirectory?.loadValue("BitsPerSample");
-      const rawColorMap = await fileDirectory?.loadValue("ColorMap");
+      const artist = await fileDirectory?.loadValue('Artist');
+      const rawBitsPerSample = await fileDirectory?.loadValue('BitsPerSample');
+      const rawColorMap = await fileDirectory?.loadValue('ColorMap');
       const bbox = mercatorBboxToGeographicBbox(firstImage.getBoundingBox() as Bbox);
 
       const imagesMetadata: Array<ImageMetadata> = [];
       const imageCount = await tiff.getImageCount();
       for (let index = 0; index < imageCount; index++) {
         const image = await tiff.getImage(index);
-        const newSubFileType = (await image.fileDirectory.loadValue("NewSubfileType")) ?? 0;
+        const newSubFileType = (await image.fileDirectory.loadValue('NewSubfileType')) ?? 0;
         const zoom = zoomFromResolution(image.getResolution(firstImage)[0]);
         const isOverview = !!(newSubFileType & 1);
         const isMask = !!(newSubFileType & 4);
@@ -70,13 +75,13 @@ const CogReader = (url: string) => {
         offset: gdalMetadata && typeof gdalMetadata.OFFSET === 'string' ? parseFloat(gdalMetadata.OFFSET) : 0.0,
         scale: gdalMetadata && typeof gdalMetadata.SCALE === 'string' ? parseFloat(gdalMetadata.SCALE) : 1.0,
         noData: firstImage.getGDALNoData() ?? undefined,
-        photometricInterpretation: await fileDirectory?.loadValue("PhotometricInterpretation"),
+        photometricInterpretation: await fileDirectory?.loadValue('PhotometricInterpretation'),
         bitsPerSample: rawBitsPerSample ? Array.from(rawBitsPerSample) : undefined,
         colorMap: rawColorMap ? Array.from(rawColorMap) : undefined,
         artist: artist,
         bbox: bbox,
-        images: imagesMetadata
-      }
+        images: imagesMetadata,
+      };
 
       // @ts-expect-error metadata will be wrapped with a Promise
       metadataCache.set(url, metadata);
@@ -88,15 +93,15 @@ const CogReader = (url: string) => {
   const getTilejson = async (fullUrl: string): Promise<TileJSON> => {
     const {artist, images, bbox} = await getMetadata();
 
-    const zooms = images.map(image => image.zoom);
+    const zooms = images.map((image) => image.zoom);
 
     return {
       tilejson: '2.2.0',
-      tiles: [fullUrl + '/{z}/{x}/{y}'],
+      tiles: [`${fullUrl}/{z}/{x}/{y}`],
       attribution: artist,
       minzoom: 0,
       maxzoom: Math.round(Math.max(...zooms)),
-      bounds: bbox
+      bounds: bbox,
     };
   };
 
@@ -112,7 +117,7 @@ const CogReader = (url: string) => {
       // FillValue won't accept NaN.
       // Infinity will work for Float32Array and Float64Array.
       // Int and Uint arrays will be filled with zeroes.
-      const fillValue = noData === undefined || isNaN(noData) ? Infinity : noData;
+      const fillValue = noData === undefined || Number.isNaN(noData) ? Infinity : noData;
 
       // We want to cache and return the promise, not await for it
       const tile = tiff.readRasters({
@@ -122,7 +127,7 @@ const CogReader = (url: string) => {
         interleave: true,
         resampleMethod: 'nearest',
         pool,
-        fillValue // When fillValue is Infinity, integer types will be filled with a 0 value.
+        fillValue, // When fillValue is Infinity, integer types will be filled with a 0 value.
       }) as Promise<TypedArray>; // interleaved ReadRasterResult is always a single TypedArray
 
       tileCache.set(key, tile);
@@ -132,34 +137,29 @@ const CogReader = (url: string) => {
 
   const getRawMask = async ({z, x, y}: TileIndex, tileSize: number = 256): Promise<TypedArray | null> => {
     const {images} = await getMetadata();
-    const maskImages = images.map((img, index) => ({...img, index})).filter(img => img.isMask);
+    const maskImages = images.map((img, index) => ({...img, index})).filter((img) => img.isMask);
     if (maskImages.length === 0) return null;
 
     const key = `mask/${url}/${tileSize}/${z}/${x}/${y}`;
     const cachedTile = maskTileCache.get(key);
     if (cachedTile !== undefined) return cachedTile;
 
-    const best = maskImages.reduce((prev, curr) =>
-      Math.abs(curr.zoom - z) < Math.abs(prev.zoom - z) ? curr : prev
-    );
+    const best = maskImages.reduce((prev, curr) => (Math.abs(curr.zoom - z) < Math.abs(prev.zoom - z) ? curr : prev));
 
     const tiff = await getGeoTiff(url);
     const firstImage = await tiff.getImage();
     const maskImg = await tiff.getImage(best.index);
 
-    const maskTile = maskImg.readRasters({
-      window: tileIndexToPixelWindow(
-        {x, y, z},
-        firstImage.getBoundingBox(),
-        maskImg.getWidth(),
-        maskImg.getHeight()
-      ),
-      width: tileSize,
-      height: tileSize,
-      interleave: true,
-      resampleMethod: 'nearest',
-      fillValue: 0, // outside COG extent = transparent
-    }).then(result => result as unknown as TypedArray);
+    const maskTile = maskImg
+      .readRasters({
+        window: tileIndexToPixelWindow({x, y, z}, firstImage.getBoundingBox(), maskImg.getWidth(), maskImg.getHeight()),
+        width: tileSize,
+        height: tileSize,
+        interleave: true,
+        resampleMethod: 'nearest',
+        fillValue: 0, // outside COG extent = transparent
+      })
+      .then((result) => result as unknown as TypedArray);
 
     maskTileCache.set(key, maskTile);
     return maskTile;
@@ -172,6 +172,6 @@ export const getCogMetadata = (url: string) => CogReader(url).getMetadata();
 
 export const setRequestHeaders = (headers: Record<string, string>) => {
   requestHeaders = headers;
-}
+};
 
 export default CogReader;
