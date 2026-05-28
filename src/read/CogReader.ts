@@ -5,6 +5,7 @@ import {Bbox, CogMetadata, ImageMetadata, TileIndex, TileJSON, TypedArray} from 
 import {
   mercatorBboxToGeographicBbox,
   tileIndexToMercatorBbox,
+  tileIndexToPixelWindow,
   zoomFromResolution
 } from './math';
 
@@ -16,6 +17,7 @@ let requestHeaders: Record<string, string> | undefined;
 const geoTiffCache = new QuickLRU<string, Promise<GeoTIFF>>({maxSize: 16, maxAge: ONE_HOUR_IN_MILLISECONDS});
 const metadataCache = new QuickLRU<string, Promise<CogMetadata>>({maxSize: 16, maxAge: ONE_HOUR_IN_MILLISECONDS});
 const tileCache = new QuickLRU<string, Promise<TypedArray>>({maxSize: 1024, maxAge: ONE_HOUR_IN_MILLISECONDS});
+const maskTileCache = new QuickLRU<string, Promise<TypedArray | null>>({maxSize: 1024, maxAge: ONE_HOUR_IN_MILLISECONDS});
 
 const CogReader = (url: string) => {
   if (pool === undefined) {
@@ -128,7 +130,42 @@ const CogReader = (url: string) => {
     }
   };
 
-  return {getTilejson, getMetadata, getRawTile};
+  const getRawMask = async ({z, x, y}: TileIndex, tileSize: number = 256): Promise<TypedArray | null> => {
+    const {images} = await getMetadata();
+    const maskImages = images.map((img, index) => ({...img, index})).filter(img => img.isMask);
+    if (maskImages.length === 0) return null;
+
+    const key = `mask/${url}/${tileSize}/${z}/${x}/${y}`;
+    const cachedTile = maskTileCache.get(key);
+    if (cachedTile !== undefined) return cachedTile;
+
+    const best = maskImages.reduce((prev, curr) =>
+      Math.abs(curr.zoom - z) < Math.abs(prev.zoom - z) ? curr : prev
+    );
+
+    const tiff = await getGeoTiff(url);
+    const firstImage = await tiff.getImage();
+    const maskImg = await tiff.getImage(best.index);
+
+    const maskTile = maskImg.readRasters({
+      window: tileIndexToPixelWindow(
+        {x, y, z},
+        firstImage.getBoundingBox(),
+        maskImg.getWidth(),
+        maskImg.getHeight()
+      ),
+      width: tileSize,
+      height: tileSize,
+      interleave: true,
+      resampleMethod: 'nearest',
+      fillValue: 0, // outside COG extent = transparent
+    }).then(result => result as unknown as TypedArray);
+
+    maskTileCache.set(key, maskTile);
+    return maskTile;
+  };
+
+  return {getTilejson, getMetadata, getRawTile, getRawMask};
 };
 
 export const getCogMetadata = (url: string) => CogReader(url).getMetadata();

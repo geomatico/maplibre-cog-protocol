@@ -35,7 +35,8 @@ const mockedCogReader = jest.mocked(CogReader);
 mockedCogReader.mockReturnValue({
   getTilejson: () => Promise.resolve(fakeTileJSON),
   getMetadata: () => Promise.resolve(fakeMetadata),
-  getRawTile: () => Promise.resolve(fakeRawTile)
+  getRawTile: () => Promise.resolve(fakeRawTile),
+  getRawMask: () => Promise.resolve(null)
 });
 
 jest.mock('@/render/custom/rendererStore');
