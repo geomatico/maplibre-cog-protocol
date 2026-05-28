@@ -57,6 +57,6 @@
     "rollup": "^4.27.3",
     "ts-jest": "^29.2.2",
     "tslib": "^2.6.3",
-    "typescript": "^5.5.3"
+    "typescript": "^6.0.3"
   }
 }
