@@ -13,6 +13,7 @@ export default defineConfig({
     include: ['test/**/*.spec.ts'],
     coverage: {
       provider: 'v8',
+      reporter: ['text', 'json-summary', 'json'],
       include: ['src/**/*.ts'],
     },
   },

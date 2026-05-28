@@ -7,7 +7,7 @@
     "watch:examples": "five-server",
     "watch": "concurrently --names 'SRC,EXAMPLES' --prefix-colors 'yellow,blue' --kill-others 'npm run watch:src' 'npm run watch:examples'",
     "lint": "biome check --write src/",
-    "test": "npm run lint && vitest run --coverage",
+    "test": "npm run lint && vitest run --reporter=default --reporter=junit --outputFile=junit.xml --coverage",
     "build:umd": "rollup -c rollup.config.mjs",
     "build:esm": "tsc --outDir dist/esm",
     "build:types": "tsc --declaration --emitDeclarationOnly --outDir dist/types",
