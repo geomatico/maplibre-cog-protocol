@@ -25,4 +25,16 @@ describe('setColorFunction', () => {
     expect(renderer).toEqual(fakeRenderer);
 
   });
+
+  test('removes a custom renderer from the store when colorFunction is undefined', () => {
+    // GIVEN
+    setColorFunction('sample.tif', () => {});
+    expect(CustomRendererStore.get('sample.tif')).toEqual(fakeRenderer);
+
+    // WHEN
+    setColorFunction('sample.tif', undefined);
+
+    // THEN
+    expect(CustomRendererStore.get('sample.tif')).toBeUndefined();
+  });
 });
