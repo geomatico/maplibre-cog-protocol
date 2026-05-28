@@ -204,6 +204,29 @@ describe('cogProtocol', () => {
     })).rejects.toThrow('Unsupported request type \'string\'');
   });
 
+  test('raw COG mask zeros the alpha channel of pixels where the mask value is 0', async () => {
+    const rgba = new Uint8ClampedArray(4 * 256 * 256).fill(255); // all pixels fully opaque
+    mockedRenderPhoto.mockReturnValueOnce(rgba);
+
+    const mask = new Uint8Array(256 * 256).fill(255); // all opaque by default
+    mask[5] = 0;   // pixel 5 is masked → alpha should become 0
+    mask[100] = 0; // pixel 100 is masked → alpha should become 0
+
+    mockedCogReader.mockReturnValueOnce({
+      getTilejson: () => Promise.resolve(fakeTileJSON),
+      getMetadata: () => Promise.resolve(fakeMetadata),
+      getRawTile: () => Promise.resolve(fakeRawTile),
+      getRawMask: () => Promise.resolve(mask),
+    });
+
+    await cogProtocol({type: 'image', url: 'cog://file.tif/1/2/3'});
+
+    expect(rgba[5 * 4 + 3]).toBe(0);    // masked pixel → transparent
+    expect(rgba[100 * 4 + 3]).toBe(0);  // masked pixel → transparent
+    expect(rgba[0 * 4 + 3]).toBe(255);  // unmasked pixel → still opaque
+    expect(rgba[200 * 4 + 3]).toBe(255); // unmasked pixel → still opaque
+  });
+
 });
 
 afterEach(() => {

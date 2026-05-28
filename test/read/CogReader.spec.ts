@@ -43,6 +43,33 @@ const fakeGeoTIFF: GeoTIFF = {
   readRasters: vi.fn(() => Promise.resolve(fakeReadRasterResult)),
 };
 
+const fakeMaskReadRasters = vi.fn(() => Promise.resolve(new Uint8Array(65536).fill(255)));
+
+const fakeMaskImage = {
+  fileDirectory: {
+    loadValue: vi.fn(async (tag: string | number) => {
+      if (tag === 'NewSubfileType') return 4; // isMask
+      return undefined;
+    }),
+  },
+  getResolution: () => [0.29858214173896974], // zoom 19
+  getWidth: () => 256,
+  getHeight: () => 256,
+  readRasters: fakeMaskReadRasters,
+};
+
+// A GeoTIFF with 3 images: base (0), overview (1), mask (2).
+const fakeGeoTIFFWithMask = {
+  // @ts-expect-error partial mock
+  getImage: (index?: number) => {
+    if (index === 2) return Promise.resolve(fakeMaskImage);
+    if (index === 1) return Promise.resolve(fakeOverview);
+    return Promise.resolve(fakeFirstImage);
+  },
+  getImageCount: () => Promise.resolve(3),
+  readRasters: vi.fn(() => Promise.resolve(fakeReadRasterResult)),
+};
+
 const fakeRawTile: TypedArray[] = [
   new Uint8Array(65536),
   new Uint8Array(65536),
@@ -70,6 +97,8 @@ describe('CogReader', () => {
     mockedFromUrl.mockClear();
     fakeFirstImage.fileDirectory.loadValue.mockClear();
     fakeOverview.fileDirectory.loadValue.mockClear();
+    fakeMaskImage.fileDirectory.loadValue.mockClear();
+    fakeMaskReadRasters.mockClear();
   });
 
   test('CogReader opens a GeoTIFF and caches it based on its URL', () => {
@@ -175,6 +204,140 @@ describe('CogReader', () => {
       pool: fakePool,
       fillValue: 1
     });
+  });
+
+  test('getRawTile returns the cached tile on subsequent calls, skipping readRasters', async () => {
+    const readRasters = vi.fn(() => Promise.resolve(fakeReadRasterResult));
+    mockedFromUrl.mockReturnValueOnce(Promise.resolve({...fakeGeoTIFF, readRasters}));
+
+    const reader = CogReader('tile-cache.tif');
+    await reader.getRawTile({z: 15, x: 16550, y: 12213});
+    await reader.getRawTile({z: 15, x: 16550, y: 12213});
+
+    expect(readRasters).toHaveBeenCalledTimes(1);
+  });
+
+  test('getRawMask returns null when the COG has no mask images', async () => {
+    // 'file.tif' metadata is already cached with no mask images (two non-mask images).
+    const result = await CogReader('file.tif').getRawMask({z: 15, x: 16550, y: 12213});
+    expect(result).toBeNull();
+  });
+
+  test('getRawMask reads the mask tile when a mask image is present', async () => {
+    mockedFromUrl.mockReturnValueOnce(Promise.resolve(fakeGeoTIFFWithMask));
+
+    const result = await CogReader('with-mask.tif').getRawMask({z: 15, x: 16550, y: 12213});
+
+    expect(result).toBeDefined();
+    expect(fakeMaskReadRasters).toHaveBeenCalledTimes(1);
+    expect(fakeMaskReadRasters).toHaveBeenCalledWith(expect.objectContaining({
+      width: 256,
+      height: 256,
+      interleave: true,
+      resampleMethod: 'nearest',
+      fillValue: 0,
+    }));
+  });
+
+  test('getRawMask returns the cached mask tile on subsequent calls, skipping readRasters', async () => {
+    mockedFromUrl.mockReturnValueOnce(Promise.resolve(fakeGeoTIFFWithMask));
+
+    const reader = CogReader('mask-cache.tif');
+    await reader.getRawMask({z: 15, x: 16550, y: 12213});
+    await reader.getRawMask({z: 15, x: 16550, y: 12213});
+
+    expect(fakeMaskReadRasters).toHaveBeenCalledTimes(1);
+  });
+
+  test('getMetadata applies default offset/scale and omits bitsPerSample and colorMap when the tags are absent', async () => {
+    mockedFromUrl.mockReturnValueOnce(Promise.resolve({
+      ...fakeGeoTIFF,
+      // @ts-expect-error partial mock
+      getImage: (index?: number) => Promise.resolve(index === 1 ? fakeOverview : {
+        ...fakeFirstImage,
+        getGDALMetadata: async () => null,
+        fileDirectory: {
+          loadValue: vi.fn(async (tag: string | number) => {
+            if (tag === 'Artist') return undefined;
+            if (tag === 'PhotometricInterpretation') return 2;
+            if (tag === 'NewSubfileType') return 0;
+            return undefined; // no BitsPerSample, no ColorMap
+          }),
+        },
+      }),
+    }));
+
+    const metadata = await CogReader('no-gdal.tif').getMetadata();
+
+    expect(metadata.offset).toBe(0);
+    expect(metadata.scale).toBe(1);
+    expect(metadata.bitsPerSample).toBeUndefined();
+    expect(metadata.colorMap).toBeUndefined();
+  });
+
+  test('getRawTile uses Infinity as fillValue when noData is absent', async () => {
+    const readRasters = vi.fn(() => Promise.resolve(fakeReadRasterResult));
+    mockedFromUrl.mockReturnValueOnce(Promise.resolve({
+      // @ts-expect-error partial mock
+      ...fakeGeoTIFF,
+      getImage: (index?: number) => Promise.resolve(index === 1 ? fakeOverview : {
+        ...fakeFirstImage,
+        getGDALNoData: () => null,
+      }),
+      readRasters,
+    }));
+
+    await CogReader('no-nodata.tif').getRawTile({z: 15, x: 16550, y: 12213});
+
+    expect(readRasters).toHaveBeenCalledWith(expect.objectContaining({fillValue: Infinity}));
+  });
+
+  test('getRawTile uses Infinity as fillValue when noData is NaN', async () => {
+    const readRasters = vi.fn(() => Promise.resolve(fakeReadRasterResult));
+    mockedFromUrl.mockReturnValueOnce(Promise.resolve({
+      // @ts-expect-error partial mock
+      ...fakeGeoTIFF,
+      getImage: (index?: number) => Promise.resolve(index === 1 ? fakeOverview : {
+        ...fakeFirstImage,
+        getGDALNoData: () => NaN,
+      }),
+      readRasters,
+    }));
+
+    await CogReader('nan-nodata.tif').getRawTile({z: 15, x: 16550, y: 12213});
+
+    expect(readRasters).toHaveBeenCalledWith(expect.objectContaining({fillValue: Infinity}));
+  });
+
+  test('getRawMask selects the mask image whose zoom is closest to the requested tile zoom', async () => {
+    const readRastersZoom15 = vi.fn(() => Promise.resolve(new Uint8Array(65536)));
+    const readRastersZoom19 = vi.fn(() => Promise.resolve(new Uint8Array(65536)));
+
+    const maskImage = (resolution: number, readRasters: ReturnType<typeof vi.fn>) => ({
+      fileDirectory: {loadValue: vi.fn(async (tag: string | number) => tag === 'NewSubfileType' ? 4 : undefined)},
+      getResolution: () => [resolution],
+      getWidth: () => 256,
+      getHeight: () => 256,
+      readRasters,
+    });
+
+    mockedFromUrl.mockReturnValueOnce(Promise.resolve({
+      // @ts-expect-error partial mock — 4 images: base, overview, mask@zoom15, mask@zoom19
+      getImage: (index?: number) => {
+        if (index === 2) return Promise.resolve(maskImage(4.777314267823516, readRastersZoom15));
+        if (index === 3) return Promise.resolve(maskImage(0.29858214173896974, readRastersZoom19));
+        if (index === 1) return Promise.resolve(fakeOverview);
+        return Promise.resolve(fakeFirstImage);
+      },
+      getImageCount: () => Promise.resolve(4),
+      readRasters: vi.fn(() => Promise.resolve(fakeReadRasterResult)),
+    }));
+
+    // z=16 is 1 stop from zoom 15 and 3 stops from zoom 19 → zoom 15 mask wins
+    await CogReader('two-masks.tif').getRawMask({z: 16, x: 0, y: 0});
+
+    expect(readRastersZoom15).toHaveBeenCalledTimes(1);
+    expect(readRastersZoom19).not.toHaveBeenCalled();
   });
 
 });
