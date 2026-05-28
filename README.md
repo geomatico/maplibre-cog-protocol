@@ -225,6 +225,36 @@ Some other interesting usages:
 * Combine bands of a multispectral image to calculate indicators on the fly.
 
 
+### Mask COG rendering with a GeoJSON polygon
+
+Use `setMask` to restrict rendering to the area covered by a GeoJSON `FeatureCollection` of `Polygon` or `MultiPolygon` features. Pixels outside the mask are set to transparent. Other geometry types in the collection are ignored.
+
+Use `clearMask` (or `setMask(undefined)`) to remove the mask.
+
+The mask is global and applies to every COG source currently on the map.
+
+```javascript
+import {setMask, clearMask} from '@geomatico/maplibre-cog-protocol';
+
+const mask = {
+  type: 'FeatureCollection',
+  features: [{
+    type: 'Feature',
+    geometry: {
+      type: 'Polygon',
+      coordinates: [[[2.0, 41.0], [3.0, 41.0], [3.0, 42.0], [2.0, 42.0], [2.0, 41.0]]]
+    },
+    properties: {}
+  }]
+};
+
+setMask(mask);   // apply mask
+clearMask();     // remove mask
+```
+
+See [masking example](examples/masking.html) for a full working demo.
+
+
 ### [unstable] Get COG metadata
 
 Use the `getCogMetadata(url)` to obtain metadata about a COG file. Some interesting information it provides:
