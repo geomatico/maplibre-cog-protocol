@@ -74,6 +74,14 @@ const renderTile = async (url: string) => {
     rgba = renderPhoto(rawTile, metadata);
   }
 
+  const rawMask = await cog.getRawMask({x, y, z});
+  if (rawMask) {
+    const pixels = TILE_SIZE * TILE_SIZE;
+    for (let i = 0; i < pixels; i++) {
+      if (rawMask[i] === 0) rgba[i * 4 + 3] = 0;
+    }
+  }
+
   applyMask(rgba, {x, y, z});
   return await createImageBitmap(
     new ImageData(rgba, TILE_SIZE, TILE_SIZE)

@@ -19,6 +19,18 @@ export const mercatorBboxToGeographicBbox = ([xMin, yMin, xMax, yMax]: Bbox): Bb
 export const zoomFromResolution = (res: number): number =>
   Math.log2(MAX_EXTENT / (TILE_SIZE * res));
 
+export const tileIndexToPixelWindow = ({x, y, z}: TileIndex, imageBox: number[], imageWidth: number, imageHeight: number): [number, number, number, number] => {
+  const [west, south, east, north] = tileIndexToMercatorBbox({x, y, z});
+  const scaleX = imageWidth / (imageBox[2] - imageBox[0]);
+  const scaleY = imageHeight / (imageBox[3] - imageBox[1]);
+  return [
+    Math.round((west  - imageBox[0]) * scaleX),
+    Math.round((imageBox[3] - north) * scaleY),
+    Math.round((east  - imageBox[0]) * scaleX),
+    Math.round((imageBox[3] - south) * scaleY),
+  ];
+};
+
 export const tilePixelFromLatLonZoom = ({latitude, longitude, zoom}: LatLonZoom): TilePixel => {
   const [mercatorX, mercatorY] = merc.forward([longitude, latitude]);
 
