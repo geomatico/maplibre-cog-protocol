@@ -6,31 +6,10 @@ import {TileIndex} from '../types';
 
 const merc = new SphericalMercator({size: TILE_SIZE, antimeridian: true});
 
-let _cachedPath: Path2D | undefined;
+let _mask: FeatureCollection | undefined;
 
 export const setMask = (mask: FeatureCollection | undefined): void => {
-  _cachedPath = undefined;
-  if (!mask || typeof Path2D === 'undefined') return;
-
-  // Precompute path in zoom-0 pixel space. At render time only a scale+translate
-  // transform is needed — no per-tile vertex loop, no trig.
-  const path = new Path2D();
-  for (const {geometry} of mask.features) {
-    for (const rings of ringGroups(geometry)) {
-      for (const ring of rings) {
-        ring.forEach((pos, i) => {
-          const [px, py] = merc.px([pos[0], pos[1]], 0);
-          if (i === 0) {
-            path.moveTo(px, py);
-          } else {
-            path.lineTo(px, py);
-          }
-        });
-        path.closePath();
-      }
-    }
-  }
-  _cachedPath = path;
+  _mask = mask;
 };
 
 export const clearMask = (): void => setMask(undefined);
@@ -47,8 +26,8 @@ const ringGroups = (geometry: Geometry): number[][][][] => {
   return [];
 };
 
-export const applyMask = (rgba: Uint8ClampedArray, {x, y, z}: TileIndex): void => {
-  if (!_cachedPath || typeof OffscreenCanvas === 'undefined') return;
+export const applyMask = (rgba: Uint8ClampedArray, tileIndex: TileIndex): void => {
+  if (!_mask || typeof OffscreenCanvas === 'undefined') return;
 
   const canvas = new OffscreenCanvas(TILE_SIZE, TILE_SIZE);
   const ctx = canvas.getContext('2d')!;
@@ -57,11 +36,23 @@ export const applyMask = (rgba: Uint8ClampedArray, {x, y, z}: TileIndex): void =
   imageData.data.set(rgba);
   ctx.putImageData(imageData, 0, 0);
 
+  const path = new Path2D();
+  for (const {geometry} of _mask.features) {
+    for (const rings of ringGroups(geometry)) {
+      for (const ring of rings) {
+        ring.forEach((pos, i) => {
+          const [cx, cy] = toTilePixel(pos, tileIndex);
+          if (i === 0) path.moveTo(cx, cy);
+          else path.lineTo(cx, cy);
+        });
+        path.closePath();
+      }
+    }
+  }
+
   ctx.globalCompositeOperation = 'destination-in';
   ctx.fillStyle = 'black';
-  const scale = 2 ** z;
-  ctx.setTransform(scale, 0, 0, scale, -x * TILE_SIZE, -y * TILE_SIZE);
-  ctx.fill(_cachedPath, 'evenodd');
+  ctx.fill(path, 'evenodd');
 
   rgba.set(ctx.getImageData(0, 0, TILE_SIZE, TILE_SIZE).data);
 };
