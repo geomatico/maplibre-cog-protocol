@@ -1,4 +1,4 @@
-import { expect, jest, test } from '@jest/globals';
+import { expect, vi, test } from 'vitest';
 
 import cogProtocol from '../src/cogProtocol';
 import CogReader from '../src/read/CogReader';
@@ -30,8 +30,8 @@ const fakeImageTile: Uint8ClampedArray<ArrayBuffer> = new Uint8ClampedArray(4 * 
 
 
 // Mocks
-jest.mock('@/read/CogReader');
-const mockedCogReader = jest.mocked(CogReader);
+vi.mock('@/read/CogReader');
+const mockedCogReader = vi.mocked(CogReader);
 mockedCogReader.mockReturnValue({
   getTilejson: () => Promise.resolve(fakeTileJSON),
   getMetadata: () => Promise.resolve(fakeMetadata),
@@ -39,32 +39,26 @@ mockedCogReader.mockReturnValue({
   getRawMask: () => Promise.resolve(null)
 });
 
-jest.mock('@/render/custom/rendererStore');
-const mockedRendererStore_get = jest.mocked(RendererStore.get);
+vi.mock('@/render/custom/rendererStore');
+const mockedRendererStore_get = vi.mocked(RendererStore.get);
 mockedRendererStore_get.mockReturnValue(undefined);
 
-jest.mock('@/render/renderColor');
-const mockedRenderColor = jest.mocked(renderColor);
+vi.mock('@/render/renderColor');
+const mockedRenderColor = vi.mocked(renderColor);
 mockedRenderColor.mockReturnValue(fakeImageTile);
 
-jest.mock('@/render/renderTerrain');
-const mockedRenderPhoto = jest.mocked(renderPhoto);
+vi.mock('@/render/renderTerrain');
+const mockedRenderPhoto = vi.mocked(renderPhoto);
 mockedRenderPhoto.mockReturnValue(fakeImageTile);
 
-jest.mock('@/render/renderPhoto');
-const mockedRenderTerrain = jest.mocked(renderTerrain);
+vi.mock('@/render/renderPhoto');
+const mockedRenderTerrain = vi.mocked(renderTerrain);
 mockedRenderTerrain.mockReturnValue(fakeImageTile);
 
 
 // Polyfills simulating a real browser
-
-// @ts-expect-error This is a polyfill for jest environment
-// eslint-disable-next-line no-global-assign
-createImageBitmap <T> = (data: T): Promise<Uint8ClampedArray> => Promise.resolve(data);
-
-// @ts-expect-error This is a polyfill for jest environment
-// eslint-disable-next-line no-global-assign
-ImageData = class {
+vi.stubGlobal('createImageBitmap', (data: unknown) => Promise.resolve(data));
+vi.stubGlobal('ImageData', class {
   constructor(data: Uint8ClampedArray, width: number, height: number) {
     if (data.length !== 4 * width * height) {
       throw new Error(`Data length (${data.length}) is not 4 * width (${width}) * (${height})`);
@@ -72,7 +66,7 @@ ImageData = class {
       return data;
     }
   }
-};
+});
 
 
 describe('cogProtocol', () => {

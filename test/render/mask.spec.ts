@@ -1,4 +1,4 @@
-import {test, expect, beforeEach, describe, beforeAll} from '@jest/globals';
+import {test, expect, beforeEach, describe, beforeAll} from 'vitest';
 import {FeatureCollection, MultiPolygon, Polygon} from 'geojson';
 
 // --- OffscreenCanvas + Path2D mock ------------------------------------------------

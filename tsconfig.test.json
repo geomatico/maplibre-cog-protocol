@@ -8,6 +8,6 @@
     "sourceMap": false,
     "removeComments": true,
     "noImplicitAny": false,
-    "types": ["jest", "node"]
+    "types": ["vitest/globals", "node"]
   },
 }

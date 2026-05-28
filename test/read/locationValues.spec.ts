@@ -1,4 +1,4 @@
-import {test, expect} from '@jest/globals';
+import {test, expect} from 'vitest';
 
 import {CogMetadata, TileJSON} from '../../src/types';
 
@@ -21,8 +21,8 @@ const fakeMetadata: CogMetadata = {
 };
 
 // Mocks
-jest.mock('@/read/CogReader');
-const mockedCogReader = jest.mocked(CogReader);
+vi.mock('@/read/CogReader');
+const mockedCogReader = vi.mocked(CogReader);
 
 describe('locationValues', () => {
 

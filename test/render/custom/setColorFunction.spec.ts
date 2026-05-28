@@ -1,12 +1,12 @@
-import {test, expect} from '@jest/globals';
+import {test, expect} from 'vitest';
 
 import CustomRendererStore from '../../../src/render/custom/rendererStore';
 import setColorFunction from '../../../src/render/custom/setColorFunction';
 import getColorFunctionRenderer from '../../../src/render/custom/getColorFunctionRenderer';
 
 // Mocks
-jest.mock('@/render/custom/getColorFunctionRenderer');
-const mockedGetCustomPixelRenderer = jest.mocked(getColorFunctionRenderer);
+vi.mock('@/render/custom/getColorFunctionRenderer');
+const mockedGetCustomPixelRenderer = vi.mocked(getColorFunctionRenderer);
 const fakeRenderer = () => new Uint8ClampedArray([]);
 mockedGetCustomPixelRenderer.mockReturnValue(fakeRenderer);
 
