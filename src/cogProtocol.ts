@@ -7,6 +7,7 @@ import renderPhoto from './render/renderPhoto';
 import renderTerrain from './render/renderTerrain';
 import { TileJSON } from './types';
 import CustomRendererStore from './render/custom/rendererStore';
+import {applyMask} from './render/mask';
 import { TILE_SIZE } from './constants';
 
 const renderTile = async (url: string) => {
@@ -73,6 +74,7 @@ const renderTile = async (url: string) => {
     rgba = renderPhoto(rawTile, metadata);
   }
 
+  applyMask(rgba, {x, y, z});
   return await createImageBitmap(
     new ImageData(rgba, TILE_SIZE, TILE_SIZE)
   );

@@ -1,6 +1,6 @@
 import {test, expect} from '@jest/globals';
 
-import {cogProtocol, colorScale, colorSchemeNames, setColorFunction, locationValues} from '../src/index';
+import {cogProtocol, colorScale, colorSchemeNames, setColorFunction, setMask, clearMask, locationValues} from '../src/index';
 
 describe('index', () => {
   test('exports public API', () => {
@@ -8,6 +8,8 @@ describe('index', () => {
     expect(colorScale).toBeDefined();
     expect(colorSchemeNames).toBeDefined();
     expect(setColorFunction).toBeDefined();
+    expect(setMask).toBeDefined();
+    expect(clearMask).toBeDefined();
     expect(locationValues).toBeDefined();
   })
 });
