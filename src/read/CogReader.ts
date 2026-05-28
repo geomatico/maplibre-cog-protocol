@@ -92,7 +92,7 @@ const CogReader = (url: string) => {
       tilejson: '2.2.0',
       tiles: [fullUrl + '/{z}/{x}/{y}'],
       attribution: artist,
-      minzoom: Math.round(Math.min(...zooms)),
+      minzoom: 0,
       maxzoom: Math.round(Math.max(...zooms)),
       bounds: bbox
     };

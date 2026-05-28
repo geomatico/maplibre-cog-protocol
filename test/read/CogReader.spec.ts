@@ -150,7 +150,7 @@ describe('CogReader', () => {
         1.8553161582776452,
         41.60517452144075
       ],
-      minzoom: 18,
+      minzoom: 0,
       maxzoom: 19,
       attribution: 'Geomatico'
     });
