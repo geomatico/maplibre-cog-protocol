@@ -80,7 +80,7 @@ export function fromPalette(
 export function fromCMYK(data: TypedArray, transparentValue: number): Uint8ClampedArray<ArrayBuffer> {
   const rgba = new Uint8ClampedArray(numPixels * 4);
   const bands = numBands(data);
-  for (let i = 0; i < data.length; i++) {
+  for (let i = 0; i < numPixels; i++) {
     const c = data[i * bands];
     const m = data[i * bands + 1];
     const y = data[i * bands + 2];
@@ -118,10 +118,10 @@ const Zn = 1.08883;
 // from https://github.com/antimatter15/rgb-lab/blob/master/color.js
 
 export function fromCIELab(data: TypedArray, transparentValue: number): Uint8ClampedArray<ArrayBuffer> {
-  const rgba = new Uint8ClampedArray(numPixels);
+  const rgba = new Uint8ClampedArray(numPixels * 4);
   const bands = numBands(data);
 
-  for (let i = 0; i < data.length; i++) {
+  for (let i = 0; i < numPixels; i++) {
     const L = data[i * bands];
     const a_ = (data[i * bands + 1] << 24) >> 24; // conversion from uint8 to int8
     const b_ = (data[i * bands + 2] << 24) >> 24; // same
