@@ -1,4 +1,4 @@
-import SphericalMercator from '@mapbox/sphericalmercator';
+import {SphericalMercator} from '@mapbox/sphericalmercator';
 import type {FeatureCollection, Geometry} from 'geojson';
 
 import {TILE_SIZE} from '../constants';

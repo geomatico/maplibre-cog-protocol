@@ -1,4 +1,4 @@
-import SphericalMercator from '@mapbox/sphericalmercator';
+import {SphericalMercator} from '@mapbox/sphericalmercator';
 
 import type {Bbox, LatLonZoom, TileIndex, TilePixel} from '../types';
 
@@ -12,10 +12,11 @@ const merc = new SphericalMercator({
 
 export const tileIndexToMercatorBbox = ({x, y, z}: TileIndex): Bbox => merc.bbox(x, y, z, false, '900913');
 
-export const mercatorBboxToGeographicBbox = ([xMin, yMin, xMax, yMax]: Bbox): Bbox => [
-  ...merc.inverse([xMin, yMin]),
-  ...merc.inverse([xMax, yMax]),
-];
+export const mercatorBboxToGeographicBbox = ([xMin, yMin, xMax, yMax]: Bbox): Bbox => {
+  const [w, s] = merc.inverse([xMin, yMin]);
+  const [e, n] = merc.inverse([xMax, yMax]);
+  return [w, s, e, n];
+};
 
 export const zoomFromResolution = (res: number): number => Math.log2(MAX_EXTENT / (TILE_SIZE * res));
 
