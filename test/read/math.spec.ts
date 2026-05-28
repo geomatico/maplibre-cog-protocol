@@ -2,6 +2,7 @@ import {test, expect} from 'vitest';
 
 import {
   tileIndexToMercatorBbox,
+  tileIndexToPixelWindow,
   mercatorBboxToGeographicBbox,
   zoomFromResolution,
   tilePixelFromLatLonZoom
@@ -65,6 +66,19 @@ describe('math', () => {
         column
       })
     );
+  });
+
+  test('tileIndexToPixelWindow maps the world tile to the full image extent', () => {
+    const WORLD_EXTENT = 20037508.342789244;
+    const fullWorld = [-WORLD_EXTENT, -WORLD_EXTENT, WORLD_EXTENT, WORLD_EXTENT];
+    expect(tileIndexToPixelWindow({x: 0, y: 0, z: 0}, fullWorld, 256, 256)).toEqual([0, 0, 256, 256]);
+  });
+
+  test('tileIndexToPixelWindow maps the NE quadrant tile to its pixel window', () => {
+    const WORLD_EXTENT = 20037508.342789244;
+    const fullWorld = [-WORLD_EXTENT, -WORLD_EXTENT, WORLD_EXTENT, WORLD_EXTENT];
+    // tile (1,0,1) covers the NE quadrant: pixel columns 128–256, rows 0–128
+    expect(tileIndexToPixelWindow({x: 1, y: 0, z: 1}, fullWorld, 256, 256)).toEqual([128, 0, 256, 128]);
   });
 
 });

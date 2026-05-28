@@ -32,6 +32,12 @@ describe('colorScale', () => {
     ).toThrow('You must provide a colorScheme or an array of at least 2 customColors');
   });
 
+  test('throws for a malformed hex colour in customColors', () => {
+    expect(() =>
+      colorScale({customColors: ['#zzzzzz', '#ffffff'], min: 0, max: 1}),
+    ).toThrow('Cannot parse hex color "#zzzzzz"');
+  });
+
   test('can generate a discrete color interpolator', () => {
     const colorScheme = 'BrewerYlGn3';
     const min = 1;
