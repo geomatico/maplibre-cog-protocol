@@ -40,6 +40,12 @@ const CogReader = (url: string) => {
     } else {
       const tiff = await getGeoTiff(url);
       const firstImage = await tiff.getImage();
+
+      const projectedCSType = firstImage.getGeoKeys()?.ProjectedCSTypeGeoKey;
+      if (projectedCSType !== undefined && projectedCSType !== 3857 && projectedCSType !== 102113) {
+        throw new Error(`COG projection EPSG:${projectedCSType} in ${url} is not supported. Reproject to EPSG:3857 (Web Mercator).`);
+      }
+
       const gdalMetadata = await firstImage.getGDALMetadata(0); // Metadata for first image and first sample
       const fileDirectory = firstImage.fileDirectory;
       const artist = await fileDirectory?.loadValue("Artist");
