@@ -28,7 +28,10 @@ const renderTile = async (url: string) => {
 
   // Read COG data
   const cog = CogReader(cogUrl);
+
+  // Chained awaits. But parallelizing with Promise.all gave no gain.
   const rawTile = await cog.getRawTile({z, x, y});
+  const rawMask = await cog.getRawTile({x, y, z}, {mask: true});
   const metadata = await cog.getMetadata();
 
   let rgba: Uint8ClampedArray<ArrayBuffer>;
@@ -74,7 +77,6 @@ const renderTile = async (url: string) => {
     rgba = renderPhoto(rawTile, metadata);
   }
 
-  const rawMask = await cog.getRawMask({x, y, z});
   if (rawMask) {
     const pixels = TILE_SIZE * TILE_SIZE;
     for (let i = 0; i < pixels; i++) {

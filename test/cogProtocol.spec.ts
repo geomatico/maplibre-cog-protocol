@@ -35,8 +35,7 @@ const mockedCogReader = vi.mocked(CogReader);
 mockedCogReader.mockReturnValue({
   getTilejson: () => Promise.resolve(fakeTileJSON),
   getMetadata: () => Promise.resolve(fakeMetadata),
-  getRawTile: () => Promise.resolve(fakeRawTile),
-  getRawMask: () => Promise.resolve(null)
+  getRawTile: (_: unknown, options?: {mask?: boolean}) => Promise.resolve(options?.mask ? null : fakeRawTile),
 });
 
 vi.mock('@/render/custom/rendererStore');
@@ -215,8 +214,7 @@ describe('cogProtocol', () => {
     mockedCogReader.mockReturnValueOnce({
       getTilejson: () => Promise.resolve(fakeTileJSON),
       getMetadata: () => Promise.resolve(fakeMetadata),
-      getRawTile: () => Promise.resolve(fakeRawTile),
-      getRawMask: () => Promise.resolve(mask),
+      getRawTile: (_: unknown, options?: {mask?: boolean}) => Promise.resolve(options?.mask ? mask : fakeRawTile),
     });
 
     await cogProtocol({type: 'image', url: 'cog://file.tif/1/2/3'});
