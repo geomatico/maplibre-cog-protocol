@@ -1,5 +1,5 @@
-import { colorScale } from './colorScale';
 import { TILE_SIZE } from '../constants';
+import { colorScale } from './colorScale';
 const renderColor = (data, { offset, scale, noData, colorScale: colorScaleParams }) => {
     const pixels = TILE_SIZE * TILE_SIZE;
     const numBands = data.length / pixels;
@@ -7,7 +7,7 @@ const renderColor = (data, { offset, scale, noData, colorScale: colorScaleParams
     const interpolate = colorScale(colorScaleParams);
     for (let i = 0; i < pixels; i++) {
         const px = offset + data[i * numBands] * scale;
-        if (px === noData || isNaN(px) || px === Infinity) {
+        if (px === noData || Number.isNaN(px) || px === Infinity) {
             rgba[4 * i] = 0;
             rgba[4 * i + 1] = 0;
             rgba[4 * i + 2] = 0;

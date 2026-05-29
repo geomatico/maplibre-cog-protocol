@@ -12,7 +12,7 @@ export var PhotometricInterpretations;
     PhotometricInterpretations[PhotometricInterpretations["ICCLab"] = 9] = "ICCLab";
 })(PhotometricInterpretations || (PhotometricInterpretations = {}));
 export const renderPhoto = (raster, { noData, photometricInterpretation, bitsPerSample, colorMap }) => {
-    const max = bitsPerSample && bitsPerSample[0] ? 2 ** bitsPerSample[0] : NaN;
+    const max = bitsPerSample?.[0] ? 2 ** bitsPerSample[0] : NaN;
     const transparentValue = noData ?? 0; // TODO defaulting to 0 may render some good black pixels transparent.
     let data;
     switch (photometricInterpretation) {

@@ -7,7 +7,7 @@ const renderTerrain = (data, { offset, scale, noData }) => {
     const interval = 0.1;
     for (let i = 0; i < pixels; i++) {
         const px = offset + data[i * numBands] * scale;
-        const h = px == noData ? 0 : px;
+        const h = px === noData ? 0 : px;
         const v = (h - base) / interval;
         rgba[4 * i] = Math.floor(v / 256 / 256) % 256;
         rgba[4 * i + 1] = Math.floor(v / 256) % 256;

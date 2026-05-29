@@ -1,6 +1,6 @@
-import { tilePixelFromLatLonZoom } from './math';
-import CogReader from './CogReader';
 import { TILE_SIZE } from '../constants';
+import CogReader from './CogReader';
+import { tilePixelFromLatLonZoom } from './math';
 const locationValues = async (url, { latitude, longitude }, zoom) => {
     const cog = CogReader(url);
     const { minzoom, maxzoom } = await cog.getTilejson(url);
@@ -11,9 +11,9 @@ const locationValues = async (url, { latitude, longitude }, zoom) => {
     const pixels = TILE_SIZE * TILE_SIZE;
     const numBands = tile.length / pixels;
     const i = row * TILE_SIZE + column;
-    return Array.from(tile.subarray(i * numBands, i * numBands + numBands)).map(rawValue => {
+    return Array.from(tile.subarray(i * numBands, i * numBands + numBands)).map((rawValue) => {
         const px = offset + rawValue * scale;
-        if (px === noData || isNaN(px) || px === Infinity) {
+        if (px === noData || Number.isNaN(px) || px === Infinity) {
             return NaN;
         }
         else {

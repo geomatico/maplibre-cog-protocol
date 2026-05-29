@@ -1,4 +1,4 @@
-import { TypedArray } from '../types';
+import type { TypedArray } from '../types';
 export declare function fromWhiteIsZero(data: TypedArray, max: number, transparentValue: number): Uint8ClampedArray<ArrayBuffer>;
 export declare function fromBlackIsZero(data: TypedArray, max: number, transparentValue: number): Uint8ClampedArray<ArrayBuffer>;
 export declare function fromRGB(data: TypedArray, transparentValue: number): Uint8ClampedArray<ArrayBuffer>;

@@ -301,5 +301,5 @@ export type ColorScaleParams = {
     isReverse?: boolean;
     isContinuous?: boolean;
 };
-declare const colorScale: ({ colorScheme, customColors, min, max, isReverse, isContinuous }: ColorScaleParams) => import("d3-scale").ScaleLinear<[number, number, number], [number, number, number], never> | import("d3-scale").ScaleThreshold<number, [number, number, number], never>;
+declare const colorScale: ({ colorScheme, customColors, min, max, isReverse, isContinuous, }: ColorScaleParams) => import("d3-scale").ScaleLinear<[number, number, number], [number, number, number], never> | import("d3-scale").ScaleThreshold<number, [number, number, number], never>;
 export { colorScale, colorSchemeNames };
