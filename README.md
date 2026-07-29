@@ -1,15 +1,83 @@
-# Maplibre COG Protocol
+# MapLibre COG Protocol — Display Cloud Optimized GeoTIFFs in MapLibre GL JS
 
-Custom protocol to load Cloud Optimized GeoTIFFs (COG) in Maplibre GL JS
+**MapLibre COG Protocol** is an open source JavaScript library for loading and visualizing
+[Cloud Optimized GeoTIFFs](https://cogeo.org/) directly in [MapLibre GL JS](https://maplibre.org/maplibre-gl-js/docs/).
+
+It adds a custom `cog://` protocol that lets MapLibre applications display large raster datasets
+straight from cloud storage using HTTP range requests, without a traditional raster tile server in
+between. Only the parts of the file needed by the current map view are fetched and decoded, in the
+browser, using [geotiff.js](https://geotiffjs.github.io/).
+
+The library renders RGB and grayscale imagery, digital elevation models, 3D terrain and hillshading,
+and applies color ramps to single-band rasters. It also lets you write your own per-pixel coloring
+functions, so the bands of a multispectral satellite image can be combined in the browser to derive
+indicators such as NDVI on the fly, with no preprocessing and no derived files to store.
 
 
-## Demo page
+## Why use MapLibre COG Protocol?
 
-**https://labs.geomatico.es/maplibre-cog-protocol**
+Traditional web raster architectures require preprocessing your data into tiles and running a
+dedicated tile server to publish them. Cloud Optimized GeoTIFFs remove that step: the file itself is
+organized so a client can request just the byte ranges it needs. This library brings that serverless
+raster workflow to MapLibre GL JS, which helps you:
+
+* Publish large rasters from plain object storage (S3, GCS, Azure Blob, or any HTTP server supporting range requests).
+* Cut raster infrastructure, preprocessing and hosting costs.
+* Display multi-gigabyte GeoTIFFs in the browser without downloading them whole.
+* Visualize satellite imagery, elevation models and other scientific rasters.
+* Apply color ramps and band arithmetic client-side, with no server round trip.
+* Derive indices from multispectral imagery on the fly, instead of precomputing and storing a raster per index.
+* Change the formula, thresholds or palette of an indicator without regenerating any data.
+* Keep control of your stack with open source geospatial software.
+
+
+## Main features
+
+* Direct COG visualization in MapLibre GL JS, via a `cog://` URL prefix.
+* Imagery rendering driven by the COG's own `PhotometricInterpretation`: RGB, grayscale, paletted, CMYK, YCbCr and CIELab.
+* Digital elevation model visualization, as hillshading or 3D terrain.
+* ColorBrewer and CARTOColors color ramps for single-band rasters, continuous or discrete.
+* Custom per-pixel coloring functions, with full access to every band of the pixel.
+* Band arithmetic on multispectral rasters, to compute and symbolize indices such as NDVI in the browser.
+* Masking with GeoJSON polygons, and support for the COG's internal mask band.
+* Raster metadata access, and pixel value queries at any location, with or without a map.
+* Custom HTTP request headers, for COGs behind authentication.
+* Works with vanilla JavaScript and with React Map GL.
+
+
+## Typical use cases
+
+* Satellite and aerial imagery viewers.
+* Remote sensing analysis on multispectral imagery, computing indices such as NDVI, NDWI or NDBI directly in the map.
+* Environmental and climate monitoring applications.
+* Digital elevation models and terrain visualization.
+* Precision agriculture and vegetation index maps.
+* Multitemporal raster animation.
+* Serverless geospatial data portals, and large scale raster publication without a map server.
+
+
+## Live examples
+
+Interactive demos covering RGB imagery, color ramps, NDVI on a multiband Sentinel-2 image, GeoJSON
+masking, and a 12 GB digital elevation model covering Catalonia at 2 m/pixel:
+
+* [MapLibre COG Protocol demo page](https://labs.geomatico.es/maplibre-cog-protocol/) — all the examples in this repository, running live.
+* [Advanced sample viewer](https://labs.geomatico.es/maplibre-cog-protocol-examples/) — load and inspect your own COG URLs.
+* [Serverless rasters in MapLibre: the COG protocol extension](https://geomatico.es/en/serverless-rasters-in-maplibre-the-cog-protocol-extension/) — article explaining the approach and why we built it.
+
+
+## Installation
+
+```shell
+npm install @geomatico/maplibre-cog-protocol
+```
+
+Or load it from a CDN with a `<script>` tag, as shown in the [vanilla HTML example](#vanilla-html--js) below.
+
 
 ## Requirements
 
-* Maplibre GL JS `^4.5.0`, `^5.0.0` or `^6.0.0` (peer dependency), except for `locationValues` and `getCogMetadata`, which work standalone. Note that Maplibre 6 dropped its UMD build, so it has to be loaded as an ES module, as in the example below.
+* MapLibre GL JS `^4.5.0`, `^5.0.0` or `^6.0.0` (peer dependency), except for `locationValues` and `getCogMetadata`, which work standalone. Note that MapLibre 6 dropped its UMD build, so it has to be loaded as an ES module, as in the example below.
 * COGs **must** be in EPSG:3857 (Web Mercator). This library does not reproject; reading a COG in any other projection throws an error. See [COG generation tips](#cog-generation-tips).
 
 ## Usage
@@ -119,7 +187,7 @@ If instead you need transparency driven by a vector geometry, see
 
 Single-band COGs can be interpreted as DEMs. Elevations are taken from the first band, with the
 COG's `scale` and `offset` applied, and encoded into RGB using the Mapbox Terrain-RGB scheme that
-Maplibre expects.
+MapLibre expects.
 
 #### As Hillshading
 
@@ -254,6 +322,50 @@ Some other interesting usages:
 * Display other bands.
 * Combine bands of a multispectral image to calculate indicators on the fly.
 
+
+#### Band arithmetic on multispectral rasters
+
+Because the `pixel` argument holds every band of the pixel, a color function can compute an index
+from several bands and symbolize the result, without precomputing a derived raster. The following
+example calculates NDVI from a 12-band Sentinel-2 COG and paints it with a d3 threshold scale:
+
+```javascript
+import {scaleThreshold} from 'd3-scale';
+
+const url = './data/sentinel2.tif';
+
+const ndviColorScale = scaleThreshold()
+  .domain([-1.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8])
+  .range([
+    [0x00, 0x00, 0x00, 0xFF], //         NDVI < -1.0
+    [0x2C, 0x7B, 0xB6, 0xFF], // -1.0 <= NDVI <  0.1
+    [0xFD, 0xAE, 0x61, 0xFF], //  0.1 <= NDVI <  0.2
+    [0xFE, 0xE0, 0x8B, 0xFF], //  0.2 <= NDVI <  0.3
+    [0xFF, 0xFF, 0xBF, 0xFF], //  0.3 <= NDVI <  0.4
+    [0xD9, 0xEF, 0x8B, 0xFF], //  0.4 <= NDVI <  0.5
+    [0xA6, 0xD9, 0x6A, 0xFF], //  0.5 <= NDVI <  0.6
+    [0x66, 0xBD, 0x63, 0xFF], //  0.6 <= NDVI <  0.7
+    [0x1A, 0x98, 0x50, 0xFF], //  0.7 <= NDVI <  0.8
+    [0x00, 0x68, 0x37, 0xFF]  //         NDVI >= 0.8
+  ])
+  .unknown([0x00, 0x00, 0x00, 0x00]); // NaN or undefined => transparent
+
+setColorFunction(url, (pixel, color) => {
+  const [B01, B02, B03, B04, B05, B06, B07, B08, B09, B11, B12, B8A] = pixel;
+  const NDVI = (B8A - B04) / (B8A + B04);
+
+  color.set(ndviColorScale(NDVI));
+});
+```
+
+The same arithmetic works for any other index (NDWI, NDBI, burn severity...), and changing the
+formula, the thresholds or the palette only requires reloading the layer, never regenerating data.
+Pair it with [`locationValues`](#get-pixel-values-for-a-given-location) to read the index value under
+the cursor.
+
+See the [custom color example](examples/custom-color.html) for the full working demo, which does
+exactly this over a Sentinel-2 image and shows the NDVI value on mouse hover.
+
 To remove a previously set color function and go back to the default rendering, pass `undefined` as
 the second argument:
 
@@ -261,7 +373,7 @@ the second argument:
 setColorFunction(cogUrl, undefined);
 ```
 
-Changing the color function only affects tiles rendered from then on, as Maplibre keeps already
+Changing the color function only affects tiles rendered from then on, as MapLibre keeps already
 rendered tiles. To force a refresh, remove and re-add the layer:
 
 ```javascript
@@ -386,7 +498,7 @@ map.on('mousemove', ({lngLat}) => {
 });
 ```
 
-`locationValues` doesn't depend on Maplibre API or the CogProtocol, so it can be used to query raster values in applications without a map:
+`locationValues` doesn't depend on MapLibre API or the CogProtocol, so it can be used to query raster values in applications without a map:
 
 ```javascript
 import {locationValues} from '@geomatico/maplibre-cog-protocol';
@@ -415,7 +527,7 @@ later call won't affect files already opened.
 ## Notes
 
 * **Attribution**: the TIFF `Artist` tag of the COG, if present, is exposed as the source
-  attribution, and thus shown in Maplibre's attribution control.
+  attribution, and thus shown in MapLibre's attribution control.
 * **Zoom range**: the source's `maxzoom` is derived from the resolution of the COG's own overviews,
   and `minzoom` is always 0. Zooming beyond the COG's resolution upsamples the highest resolution
   image available.
@@ -469,3 +581,21 @@ npm publish --access public
 git push origin tag vX.X.X
 npm run gh-publish  # publish examples to labs.geomatico.es
 ```
+
+
+## About Geomatico
+
+MapLibre COG Protocol is developed and maintained by [Geomatico](https://geomatico.es/en/), an open
+source geospatial software development and GIS consulting company.
+
+We build custom web mapping platforms, raster processing workflows and geospatial applications using
+MapLibre, TypeScript, PostGIS, GDAL, GeoServer and cloud native spatial data formats, with a focus on
+geographic information analysis and publishing, mobility and the environment.
+
+Need to publish satellite imagery, elevation models or other large raster datasets on the web?
+[Talk to Geomatico](https://geomatico.es/en/).
+
+
+## License
+
+[MIT](LICENSE)
