@@ -9,7 +9,7 @@ Custom protocol to load Cloud Optimized GeoTIFFs (COG) in Maplibre GL JS
 
 ## Requirements
 
-* Maplibre GL JS `^4.5.0` or `^5.0.0` (peer dependency), except for `locationValues` and `getCogMetadata`, which work standalone.
+* Maplibre GL JS `^4.5.0`, `^5.0.0` or `^6.0.0` (peer dependency), except for `locationValues` and `getCogMetadata`, which work standalone. Note that Maplibre 6 dropped its UMD build, so it has to be loaded as an ES module, as in the example below.
 * COGs **must** be in EPSG:3857 (Web Mercator). This library does not reproject; reading a COG in any other projection throws an error. See [COG generation tips](#cog-generation-tips).
 
 ## Usage
@@ -22,13 +22,14 @@ For better quality, use always `tileSize: 256` to match the size of tiles delive
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css">
-  <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@^6.0.0/dist/maplibre-gl.css">
   <script src="https://unpkg.com/@geomatico/maplibre-cog-protocol/dist/index.js"></script>
 </head>
 <body>
 <div id="map" style="width: 600px; height: 400px"></div>
-<script>
+<script type="module">
+  import * as maplibregl from 'https://unpkg.com/maplibre-gl@^6.0.0/dist/maplibre-gl.mjs';
+
   let map = new maplibregl.Map({
     container: 'map',
     style: 'https://geoserveis.icgc.cat/contextmaps/icgc_mapa_base_gris_simplificat.json',

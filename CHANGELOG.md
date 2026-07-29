@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- 
+- Support Maplibre GL JS 6, widening the peer dependency range to `^4.5.0 || ^5.0.0 || ^6.0.0`. Maplibre 6 no longer ships a UMD build, so it must be loaded as an ES module; the examples and the README have been updated accordingly.
 
 ### Removed
 
