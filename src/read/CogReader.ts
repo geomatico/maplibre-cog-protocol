@@ -8,6 +8,7 @@ const ONE_HOUR_IN_MILLISECONDS = 60 * 60 * 1000;
 
 let pool: Pool;
 let requestHeaders: Record<string, string> | undefined;
+let sourceOptions: Record<string, unknown> | undefined;
 
 const geoTiffCache = new QuickLRU<string, Promise<GeoTIFF>>({maxSize: 16, maxAge: ONE_HOUR_IN_MILLISECONDS});
 const metadataCache = new QuickLRU<string, Promise<CogMetadata>>({maxSize: 16, maxAge: ONE_HOUR_IN_MILLISECONDS});
@@ -23,7 +24,10 @@ const CogReader = (url: string) => {
     if (cachedGeoTiff) {
       return cachedGeoTiff;
     } else {
-      const geoTiff = fromUrl(url, requestHeaders ? {headers: requestHeaders} : undefined);
+      const geoTiff = fromUrl(url, {
+        ...sourceOptions,
+        ...(requestHeaders ? {headers: requestHeaders} : {}),
+      });
       geoTiffCache.set(url, geoTiff);
       return geoTiff;
     }
@@ -159,6 +163,10 @@ export const getCogMetadata = (url: string) => CogReader(url).getMetadata();
 
 export const setRequestHeaders = (headers: Record<string, string>) => {
   requestHeaders = headers;
+};
+
+export const setSourceOptions = (options: Record<string, unknown>) => {
+  sourceOptions = options;
 };
 
 export default CogReader;

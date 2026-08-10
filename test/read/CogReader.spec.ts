@@ -3,7 +3,7 @@ import {test, expect} from 'vitest';
 import {TypedArray} from '../../src/types';
 
 import {fromUrl, GeoTIFF, Pool, ReadRasterResult} from 'geotiff';
-import CogReader, {setRequestHeaders} from '../../src/read/CogReader';
+import CogReader, {setRequestHeaders, setSourceOptions} from '../../src/read/CogReader';
 import {PhotometricInterpretations} from '../../src/render/renderPhoto';
 
 
@@ -105,6 +105,9 @@ describe('CogReader', () => {
     fakeOverviewReadRasters.mockClear();
     fakeMaskImage.fileDirectory.loadValue.mockClear();
     fakeMaskReadRasters.mockClear();
+    // Clear module-level state between tests
+    setRequestHeaders(undefined as any);
+    setSourceOptions(undefined as any);
   });
 
   test('CogReader opens a GeoTIFF and caches it based on its URL', () => {
@@ -114,9 +117,45 @@ describe('CogReader', () => {
 
     expect(mockedPool).toHaveBeenCalledTimes(1);
     expect(mockedFromUrl).toHaveBeenCalledTimes(1);
-    expect(mockedFromUrl).toHaveBeenCalledWith('file.tif', undefined);
+    expect(mockedFromUrl).toHaveBeenCalledWith('file.tif', {});
   });
 
+
+  test('setSourceOptions passes options to fromUrl', () => {
+    mockedFromUrl.mockClear();
+
+    setSourceOptions({blockSize: 65536});
+    CogReader('source-opts.tif').getMetadata();
+
+    expect(mockedFromUrl).toHaveBeenCalledTimes(1);
+    expect(mockedFromUrl).toHaveBeenCalledWith('source-opts.tif', {blockSize: 65536});
+  });
+
+  test('setSourceOptions combines with requestHeaders', () => {
+    mockedFromUrl.mockClear();
+
+    setSourceOptions({blockSize: 65536, cacheSize: 200});
+    setRequestHeaders({Authorization: 'Bearer test'});
+    CogReader('combined.tif').getMetadata();
+
+    expect(mockedFromUrl).toHaveBeenCalledTimes(1);
+    expect(mockedFromUrl).toHaveBeenCalledWith('combined.tif', {
+      blockSize: 65536,
+      cacheSize: 200,
+      headers: {Authorization: 'Bearer test'},
+    });
+  });
+
+  test('setSourceOptions can be cleared by passing undefined', () => {
+    mockedFromUrl.mockClear();
+
+    setSourceOptions({blockSize: 65536});
+    setSourceOptions(undefined as any); // clear options
+    CogReader('cleared.tif').getMetadata();
+
+    expect(mockedFromUrl).toHaveBeenCalledTimes(1);
+    expect(mockedFromUrl).toHaveBeenCalledWith('cleared.tif', {});
+  });
 
   test('setRequestHeaders sets request headers when reading a GeoTIFF', () => {
     const customHeaders = {'Authorization': 'Bearer XXXX'};
