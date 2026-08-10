@@ -1,12 +1,12 @@
-import {test, expect} from '@jest/globals';
+import {test, expect} from 'vitest';
 
 import CustomRendererStore from '../../../src/render/custom/rendererStore';
 import setColorFunction from '../../../src/render/custom/setColorFunction';
 import getColorFunctionRenderer from '../../../src/render/custom/getColorFunctionRenderer';
 
 // Mocks
-jest.mock('@/render/custom/getColorFunctionRenderer');
-const mockedGetCustomPixelRenderer = jest.mocked(getColorFunctionRenderer);
+vi.mock('@/render/custom/getColorFunctionRenderer');
+const mockedGetCustomPixelRenderer = vi.mocked(getColorFunctionRenderer);
 const fakeRenderer = () => new Uint8ClampedArray([]);
 mockedGetCustomPixelRenderer.mockReturnValue(fakeRenderer);
 
@@ -24,5 +24,17 @@ describe('setColorFunction', () => {
     expect(mockedGetCustomPixelRenderer).toHaveBeenCalledWith(colorFunction);
     expect(renderer).toEqual(fakeRenderer);
 
+  });
+
+  test('removes a custom renderer from the store when colorFunction is undefined', () => {
+    // GIVEN
+    setColorFunction('sample.tif', () => {});
+    expect(CustomRendererStore.get('sample.tif')).toEqual(fakeRenderer);
+
+    // WHEN
+    setColorFunction('sample.tif', undefined);
+
+    // THEN
+    expect(CustomRendererStore.get('sample.tif')).toBeUndefined();
   });
 });

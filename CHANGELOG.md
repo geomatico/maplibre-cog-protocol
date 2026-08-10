@@ -22,6 +22,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 
 
+## [0.9.1]
+
+### Changed
+
+- Support Maplibre GL JS 6, widening the peer dependency range to `^4.5.0 || ^5.0.0 || ^6.0.0`. Maplibre 6 no longer ships a UMD build, so it must be loaded as an ES module; the examples and the README have been updated accordingly.
+
+
+## [0.9.0]
+
+### Added
+
+- New `setMask(featureCollection)` and `clearMask()` methods to restrict rendering to the area covered by a GeoJSON `Polygon`/`MultiPolygon`. The mask is global and applies to every COG source.
+- COGs containing an internal mask band are now rendered transparent where the file masks them out, in every rendering mode.
+- `setColorFunction(url, undefined)` removes a previously set color function, going back to the default rendering.
+
+### Changed
+
+- Upgraded `geotiff` to version 3.
+- Faster tile loading: the overview to read from is now selected by us, and read with an explicit pixel window, instead of letting `geotiff` resolve a bounding box. This avoids scanning every image on each tile request, and the rounding errors that made a tile spill over its neighbours, fetching more data than needed.
+- Reading a COG in a projection other than EPSG:3857 now throws an explicit error, instead of silently producing wrong results.
+- TileJSON `minzoom` is now always 0, so COGs keep rendering when zoomed out below their coarsest overview.
+
+### Fixed
+
+- Fixed CMYK and CIELab image rendering.
+
+
+## [0.8.0]
+
+### Added
+
+- New `setRequestHeaders(headers)` method, to send custom HTTP headers when fetching COGs, e.g. for authentication.
+
 
 ## [0.7.0]
 

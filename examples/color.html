@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Maplibre COG Protocol Example</title>
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css">
-  <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@^6.0.0/dist/maplibre-gl.css">
   <script src="dist/index.js"></script>
   <style>
       html, body, #map {
@@ -31,7 +30,9 @@
 <body>
 <div id="map"></div>
 <div id="info"></div>
-<script>
+<script type="module">
+  import * as maplibregl from 'https://unpkg.com/maplibre-gl@^6.0.0/dist/maplibre-gl.mjs';
+
   let map = new maplibregl.Map({
     container: 'map',
     style: 'https://geoserveis.icgc.cat/contextmaps/icgc_orto_estandard.json',

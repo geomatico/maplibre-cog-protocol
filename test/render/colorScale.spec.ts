@@ -1,4 +1,4 @@
-import { describe, expect, test } from '@jest/globals';
+import { describe, expect, test } from 'vitest';
 
 import { colorScale, colorSchemeNames, HEXColor } from '../../src/render/colorScale';
 
@@ -30,6 +30,12 @@ describe('colorScale', () => {
     expect(() =>
       colorScale({colorScheme, customColors, min, max})
     ).toThrow('You must provide a colorScheme or an array of at least 2 customColors');
+  });
+
+  test('throws for a malformed hex colour in customColors', () => {
+    expect(() =>
+      colorScale({customColors: ['#zzzzzz', '#ffffff'], min: 0, max: 1}),
+    ).toThrow('Cannot parse hex color "#zzzzzz"');
   });
 
   test('can generate a discrete color interpolator', () => {

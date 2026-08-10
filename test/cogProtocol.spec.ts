@@ -1,4 +1,4 @@
-import { expect, jest, test } from '@jest/globals';
+import { expect, vi, test } from 'vitest';
 
 import cogProtocol from '../src/cogProtocol';
 import CogReader from '../src/read/CogReader';
@@ -30,40 +30,34 @@ const fakeImageTile: Uint8ClampedArray<ArrayBuffer> = new Uint8ClampedArray(4 * 
 
 
 // Mocks
-jest.mock('@/read/CogReader');
-const mockedCogReader = jest.mocked(CogReader);
+vi.mock('@/read/CogReader');
+const mockedCogReader = vi.mocked(CogReader);
 mockedCogReader.mockReturnValue({
   getTilejson: () => Promise.resolve(fakeTileJSON),
   getMetadata: () => Promise.resolve(fakeMetadata),
-  getRawTile: () => Promise.resolve(fakeRawTile)
+  getRawTile: (_: unknown, options?: {mask?: boolean}) => Promise.resolve(options?.mask ? null : fakeRawTile),
 });
 
-jest.mock('@/render/custom/rendererStore');
-const mockedRendererStore_get = jest.mocked(RendererStore.get);
+vi.mock('@/render/custom/rendererStore');
+const mockedRendererStore_get = vi.mocked(RendererStore.get);
 mockedRendererStore_get.mockReturnValue(undefined);
 
-jest.mock('@/render/renderColor');
-const mockedRenderColor = jest.mocked(renderColor);
+vi.mock('@/render/renderColor');
+const mockedRenderColor = vi.mocked(renderColor);
 mockedRenderColor.mockReturnValue(fakeImageTile);
 
-jest.mock('@/render/renderTerrain');
-const mockedRenderPhoto = jest.mocked(renderPhoto);
+vi.mock('@/render/renderTerrain');
+const mockedRenderPhoto = vi.mocked(renderPhoto);
 mockedRenderPhoto.mockReturnValue(fakeImageTile);
 
-jest.mock('@/render/renderPhoto');
-const mockedRenderTerrain = jest.mocked(renderTerrain);
+vi.mock('@/render/renderPhoto');
+const mockedRenderTerrain = vi.mocked(renderTerrain);
 mockedRenderTerrain.mockReturnValue(fakeImageTile);
 
 
 // Polyfills simulating a real browser
-
-// @ts-expect-error This is a polyfill for jest environment
-// eslint-disable-next-line no-global-assign
-createImageBitmap <T> = (data: T): Promise<Uint8ClampedArray> => Promise.resolve(data);
-
-// @ts-expect-error This is a polyfill for jest environment
-// eslint-disable-next-line no-global-assign
-ImageData = class {
+vi.stubGlobal('createImageBitmap', (data: unknown) => Promise.resolve(data));
+vi.stubGlobal('ImageData', class {
   constructor(data: Uint8ClampedArray, width: number, height: number) {
     if (data.length !== 4 * width * height) {
       throw new Error(`Data length (${data.length}) is not 4 * width (${width}) * (${height})`);
@@ -71,7 +65,7 @@ ImageData = class {
       return data;
     }
   }
-};
+});
 
 
 describe('cogProtocol', () => {
@@ -207,6 +201,28 @@ describe('cogProtocol', () => {
       type: 'string',
       url: 'cog://file.tif'
     })).rejects.toThrow('Unsupported request type \'string\'');
+  });
+
+  test('raw COG mask zeros the alpha channel of pixels where the mask value is 0', async () => {
+    const rgba = new Uint8ClampedArray(4 * 256 * 256).fill(255); // all pixels fully opaque
+    mockedRenderPhoto.mockReturnValueOnce(rgba);
+
+    const mask = new Uint8Array(256 * 256).fill(255); // all opaque by default
+    mask[5] = 0;   // pixel 5 is masked → alpha should become 0
+    mask[100] = 0; // pixel 100 is masked → alpha should become 0
+
+    mockedCogReader.mockReturnValueOnce({
+      getTilejson: () => Promise.resolve(fakeTileJSON),
+      getMetadata: () => Promise.resolve(fakeMetadata),
+      getRawTile: (_: unknown, options?: {mask?: boolean}) => Promise.resolve(options?.mask ? mask : fakeRawTile),
+    });
+
+    await cogProtocol({type: 'image', url: 'cog://file.tif/1/2/3'});
+
+    expect(rgba[5 * 4 + 3]).toBe(0);    // masked pixel → transparent
+    expect(rgba[100 * 4 + 3]).toBe(0);  // masked pixel → transparent
+    expect(rgba[0 * 4 + 3]).toBe(255);  // unmasked pixel → still opaque
+    expect(rgba[200 * 4 + 3]).toBe(255); // unmasked pixel → still opaque
   });
 
 });

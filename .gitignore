@@ -1,6 +1,7 @@
 node_modules
-coverage
 dist
+coverage
+junit.xml
 
 .idea
 geomatico-maplibre-cog-protocol-*.tgz

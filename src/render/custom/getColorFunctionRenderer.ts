@@ -1,7 +1,8 @@
-import { TILE_SIZE } from '../../constants';
-import {CogMetadata, ImageRenderer, ColorFunction} from '../../types';
+import {TILE_SIZE} from '../../constants';
+import type {CogMetadata, ColorFunction, ImageRenderer} from '../../types';
 
-const getColorFunctionRenderer = (colorFunction: ColorFunction): ImageRenderer<CogMetadata> =>
+const getColorFunctionRenderer =
+  (colorFunction: ColorFunction): ImageRenderer<CogMetadata> =>
   (data, metadata) => {
     const pixels = TILE_SIZE * TILE_SIZE;
     const numBands = data.length / pixels;
@@ -11,10 +12,11 @@ const getColorFunctionRenderer = (colorFunction: ColorFunction): ImageRenderer<C
       colorFunction(
         data.subarray(i * numBands, i * numBands + numBands), // pixel
         rgba.subarray(4 * i, 4 * i + 4), // color
-        metadata);
+        metadata,
+      );
     }
 
     return rgba;
-  }
+  };
 
 export default getColorFunctionRenderer;

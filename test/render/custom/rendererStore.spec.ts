@@ -1,4 +1,4 @@
-import {test, expect} from '@jest/globals';
+import {test, expect} from 'vitest';
 
 import RendererStore from '../../../src/render/custom/rendererStore';
 
@@ -20,5 +20,13 @@ describe('rendererStore', () => {
     if (renderer) {
       expect(renderer(new Int8Array(), dummyMetadata)).toEqual(sampleImage);
     }
+  });
+
+  test('deletes a renderer from the store', () => {
+    RendererStore.set('to_delete.tif', () => sampleImage);
+    expect(RendererStore.get('to_delete.tif')).toBeInstanceOf(Function);
+    
+    RendererStore.delete('to_delete.tif');
+    expect(RendererStore.get('to_delete.tif')).toBeUndefined();
   });
 });

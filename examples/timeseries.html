@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Maplibre COG Protocol Example</title>
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css">
-  <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@^6.0.0/dist/maplibre-gl.css">
   <script src="dist/index.js"></script>
   <style>
       html, body, #map {
@@ -51,6 +50,8 @@
 </div>
 <canvas id="chart" width="300" height="150"></canvas>
 <script type="module">
+  import * as maplibregl from 'https://unpkg.com/maplibre-gl@^6.0.0/dist/maplibre-gl.mjs';
+
 
   const url = "./data/timeseries.tif";
   const colorScale = MaplibreCOGProtocol.colorScale({colorScheme: 'BrewerRdYlBu10', min: 1, max: 7, isContinuous: true, isReverse: true});

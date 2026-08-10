@@ -1,4 +1,4 @@
-import {test, expect} from '@jest/globals';
+import {test, expect} from 'vitest';
 
 import {CogMetadata, TileJSON} from '../../src/types';
 
@@ -21,8 +21,8 @@ const fakeMetadata: CogMetadata = {
 };
 
 // Mocks
-jest.mock('@/read/CogReader');
-const mockedCogReader = jest.mocked(CogReader);
+vi.mock('@/read/CogReader');
+const mockedCogReader = vi.mocked(CogReader);
 
 describe('locationValues', () => {
 
@@ -32,9 +32,8 @@ describe('locationValues', () => {
     mockedCogReader.mockReturnValueOnce({
       getTilejson: () => Promise.resolve(fakeTileJSON),
       getMetadata: () => Promise.resolve(fakeMetadata),
-      getRawTile: () => Promise.resolve(
-        rawTile
-      )
+      getRawTile: () => Promise.resolve(rawTile),
+      getRawMask: () => Promise.resolve(null)
     });
 
     const values = await locationValues('file.tif', {latitude: 0, longitude: 0});
@@ -52,9 +51,8 @@ describe('locationValues', () => {
         images: [],
         noData: 0
       }),
-      getRawTile: () => Promise.resolve(
-        rawTile
-      )
+      getRawTile: () => Promise.resolve(rawTile),
+      getRawMask: () => Promise.resolve(null)
     });
 
     const values = await locationValues('file.tif', {latitude: 0, longitude: 0});
@@ -65,9 +63,8 @@ describe('locationValues', () => {
     mockedCogReader.mockReturnValueOnce({
       getTilejson: () => Promise.resolve(fakeTileJSON),
       getMetadata: () => Promise.resolve(fakeMetadata),
-      getRawTile: () => Promise.resolve(
-        new Uint8Array(65536).fill(0)
-      )
+      getRawTile: () => Promise.resolve(new Uint8Array(65536).fill(0)),
+      getRawMask: () => Promise.resolve(null)
     });
 
     const values = await locationValues('file.tif', {latitude: 0, longitude: 0});
@@ -78,9 +75,8 @@ describe('locationValues', () => {
     mockedCogReader.mockReturnValue({
       getTilejson: () => Promise.resolve(fakeTileJSON),
       getMetadata: () => Promise.resolve(fakeMetadata),
-      getRawTile: () => Promise.resolve(
-        new Uint8Array(65536).fill(Infinity)
-      )
+      getRawTile: () => Promise.resolve(new Uint8Array(65536).fill(Infinity)),
+      getRawMask: () => Promise.resolve(null)
     });
 
     const values = await locationValues('file.tif', {latitude: 0, longitude: 0});

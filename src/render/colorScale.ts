@@ -1,4 +1,4 @@
-import { scaleLinear, scaleThreshold } from 'd3-scale';
+import {scaleLinear, scaleThreshold} from 'd3-scale';
 
 export type HEXColor = `#${string}`;
 
@@ -136,8 +136,31 @@ export const COLOR_SCHEMES = {
   BrewerPuOr7: ['#b35806', '#f1a340', '#fee0b6', '#f7f7f7', '#d8daeb', '#998ec3', '#542788'],
   BrewerPuOr8: ['#b35806', '#e08214', '#fdb863', '#fee0b6', '#d8daeb', '#b2abd2', '#8073ac', '#542788'],
   BrewerPuOr9: ['#b35806', '#e08214', '#fdb863', '#fee0b6', '#f7f7f7', '#d8daeb', '#b2abd2', '#8073ac', '#542788'],
-  BrewerPuOr10: ['#7f3b08', '#b35806', '#e08214', '#fdb863', '#fee0b6', '#d8daeb', '#b2abd2', '#8073ac', '#542788', '#2d004b'],
-  BrewerPuOr11: ['#7f3b08', '#b35806', '#e08214', '#fdb863', '#fee0b6', '#f7f7f7', '#d8daeb', '#b2abd2', '#8073ac', '#542788', '#2d004b'],
+  BrewerPuOr10: [
+    '#7f3b08',
+    '#b35806',
+    '#e08214',
+    '#fdb863',
+    '#fee0b6',
+    '#d8daeb',
+    '#b2abd2',
+    '#8073ac',
+    '#542788',
+    '#2d004b',
+  ],
+  BrewerPuOr11: [
+    '#7f3b08',
+    '#b35806',
+    '#e08214',
+    '#fdb863',
+    '#fee0b6',
+    '#f7f7f7',
+    '#d8daeb',
+    '#b2abd2',
+    '#8073ac',
+    '#542788',
+    '#2d004b',
+  ],
   BrewerBrBG3: ['#d8b365', '#f5f5f5', '#5ab4ac'],
   BrewerBrBG4: ['#a6611a', '#dfc27d', '#80cdc1', '#018571'],
   BrewerBrBG5: ['#a6611a', '#dfc27d', '#f5f5f5', '#80cdc1', '#018571'],
@@ -145,8 +168,31 @@ export const COLOR_SCHEMES = {
   BrewerBrBG7: ['#8c510a', '#d8b365', '#f6e8c3', '#f5f5f5', '#c7eae5', '#5ab4ac', '#01665e'],
   BrewerBrBG8: ['#8c510a', '#bf812d', '#dfc27d', '#f6e8c3', '#c7eae5', '#80cdc1', '#35978f', '#01665e'],
   BrewerBrBG9: ['#8c510a', '#bf812d', '#dfc27d', '#f6e8c3', '#f5f5f5', '#c7eae5', '#80cdc1', '#35978f', '#01665e'],
-  BrewerBrBG10: ['#543005', '#8c510a', '#bf812d', '#dfc27d', '#f6e8c3', '#c7eae5', '#80cdc1', '#35978f', '#01665e', '#003c30'],
-  BrewerBrBG11: ['#543005', '#8c510a', '#bf812d', '#dfc27d', '#f6e8c3', '#f5f5f5', '#c7eae5', '#80cdc1', '#35978f', '#01665e', '#003c30'],
+  BrewerBrBG10: [
+    '#543005',
+    '#8c510a',
+    '#bf812d',
+    '#dfc27d',
+    '#f6e8c3',
+    '#c7eae5',
+    '#80cdc1',
+    '#35978f',
+    '#01665e',
+    '#003c30',
+  ],
+  BrewerBrBG11: [
+    '#543005',
+    '#8c510a',
+    '#bf812d',
+    '#dfc27d',
+    '#f6e8c3',
+    '#f5f5f5',
+    '#c7eae5',
+    '#80cdc1',
+    '#35978f',
+    '#01665e',
+    '#003c30',
+  ],
   BrewerPRGn3: ['#af8dc3', '#f7f7f7', '#7fbf7b'],
   BrewerPRGn4: ['#7b3294', '#c2a5cf', '#a6dba0', '#008837'],
   BrewerPRGn5: ['#7b3294', '#c2a5cf', '#f7f7f7', '#a6dba0', '#008837'],
@@ -154,8 +200,31 @@ export const COLOR_SCHEMES = {
   BrewerPRGn7: ['#762a83', '#af8dc3', '#e7d4e8', '#f7f7f7', '#d9f0d3', '#7fbf7b', '#1b7837'],
   BrewerPRGn8: ['#762a83', '#9970ab', '#c2a5cf', '#e7d4e8', '#d9f0d3', '#a6dba0', '#5aae61', '#1b7837'],
   BrewerPRGn9: ['#762a83', '#9970ab', '#c2a5cf', '#e7d4e8', '#f7f7f7', '#d9f0d3', '#a6dba0', '#5aae61', '#1b7837'],
-  BrewerPRGn10: ['#40004b', '#762a83', '#9970ab', '#c2a5cf', '#e7d4e8', '#d9f0d3', '#a6dba0', '#5aae61', '#1b7837', '#00441b'],
-  BrewerPRGn11: ['#40004b', '#762a83', '#9970ab', '#c2a5cf', '#e7d4e8', '#f7f7f7', '#d9f0d3', '#a6dba0', '#5aae61', '#1b7837', '#00441b'],
+  BrewerPRGn10: [
+    '#40004b',
+    '#762a83',
+    '#9970ab',
+    '#c2a5cf',
+    '#e7d4e8',
+    '#d9f0d3',
+    '#a6dba0',
+    '#5aae61',
+    '#1b7837',
+    '#00441b',
+  ],
+  BrewerPRGn11: [
+    '#40004b',
+    '#762a83',
+    '#9970ab',
+    '#c2a5cf',
+    '#e7d4e8',
+    '#f7f7f7',
+    '#d9f0d3',
+    '#a6dba0',
+    '#5aae61',
+    '#1b7837',
+    '#00441b',
+  ],
   BrewerPiYG3: ['#e9a3c9', '#f7f7f7', '#a1d76a'],
   BrewerPiYG4: ['#d01c8b', '#f1b6da', '#b8e186', '#4dac26'],
   BrewerPiYG5: ['#d01c8b', '#f1b6da', '#f7f7f7', '#b8e186', '#4dac26'],
@@ -163,8 +232,31 @@ export const COLOR_SCHEMES = {
   BrewerPiYG7: ['#c51b7d', '#e9a3c9', '#fde0ef', '#f7f7f7', '#e6f5d0', '#a1d76a', '#4d9221'],
   BrewerPiYG8: ['#c51b7d', '#de77ae', '#f1b6da', '#fde0ef', '#e6f5d0', '#b8e186', '#7fbc41', '#4d9221'],
   BrewerPiYG9: ['#c51b7d', '#de77ae', '#f1b6da', '#fde0ef', '#f7f7f7', '#e6f5d0', '#b8e186', '#7fbc41', '#4d9221'],
-  BrewerPiYG10: ['#8e0152', '#c51b7d', '#de77ae', '#f1b6da', '#fde0ef', '#e6f5d0', '#b8e186', '#7fbc41', '#4d9221', '#276419'],
-  BrewerPiYG11: ['#8e0152', '#c51b7d', '#de77ae', '#f1b6da', '#fde0ef', '#f7f7f7', '#e6f5d0', '#b8e186', '#7fbc41', '#4d9221', '#276419'],
+  BrewerPiYG10: [
+    '#8e0152',
+    '#c51b7d',
+    '#de77ae',
+    '#f1b6da',
+    '#fde0ef',
+    '#e6f5d0',
+    '#b8e186',
+    '#7fbc41',
+    '#4d9221',
+    '#276419',
+  ],
+  BrewerPiYG11: [
+    '#8e0152',
+    '#c51b7d',
+    '#de77ae',
+    '#f1b6da',
+    '#fde0ef',
+    '#f7f7f7',
+    '#e6f5d0',
+    '#b8e186',
+    '#7fbc41',
+    '#4d9221',
+    '#276419',
+  ],
   BrewerRdBu3: ['#ef8a62', '#f7f7f7', '#67a9cf'],
   BrewerRdBu4: ['#ca0020', '#f4a582', '#92c5de', '#0571b0'],
   BrewerRdBu5: ['#ca0020', '#f4a582', '#f7f7f7', '#92c5de', '#0571b0'],
@@ -172,8 +264,31 @@ export const COLOR_SCHEMES = {
   BrewerRdBu7: ['#b2182b', '#ef8a62', '#fddbc7', '#f7f7f7', '#d1e5f0', '#67a9cf', '#2166ac'],
   BrewerRdBu8: ['#b2182b', '#d6604d', '#f4a582', '#fddbc7', '#d1e5f0', '#92c5de', '#4393c3', '#2166ac'],
   BrewerRdBu9: ['#b2182b', '#d6604d', '#f4a582', '#fddbc7', '#f7f7f7', '#d1e5f0', '#92c5de', '#4393c3', '#2166ac'],
-  BrewerRdBu10: ['#67001f', '#b2182b', '#d6604d', '#f4a582', '#fddbc7', '#d1e5f0', '#92c5de', '#4393c3', '#2166ac', '#053061'],
-  BrewerRdBu11: ['#67001f', '#b2182b', '#d6604d', '#f4a582', '#fddbc7', '#f7f7f7', '#d1e5f0', '#92c5de', '#4393c3', '#2166ac', '#053061'],
+  BrewerRdBu10: [
+    '#67001f',
+    '#b2182b',
+    '#d6604d',
+    '#f4a582',
+    '#fddbc7',
+    '#d1e5f0',
+    '#92c5de',
+    '#4393c3',
+    '#2166ac',
+    '#053061',
+  ],
+  BrewerRdBu11: [
+    '#67001f',
+    '#b2182b',
+    '#d6604d',
+    '#f4a582',
+    '#fddbc7',
+    '#f7f7f7',
+    '#d1e5f0',
+    '#92c5de',
+    '#4393c3',
+    '#2166ac',
+    '#053061',
+  ],
   BrewerRdGy3: ['#ef8a62', '#ffffff', '#999999'],
   BrewerRdGy4: ['#ca0020', '#f4a582', '#bababa', '#404040'],
   BrewerRdGy5: ['#ca0020', '#f4a582', '#ffffff', '#bababa', '#404040'],
@@ -181,8 +296,31 @@ export const COLOR_SCHEMES = {
   BrewerRdGy7: ['#b2182b', '#ef8a62', '#fddbc7', '#ffffff', '#e0e0e0', '#999999', '#4d4d4d'],
   BrewerRdGy8: ['#b2182b', '#d6604d', '#f4a582', '#fddbc7', '#e0e0e0', '#bababa', '#878787', '#4d4d4d'],
   BrewerRdGy9: ['#b2182b', '#d6604d', '#f4a582', '#fddbc7', '#ffffff', '#e0e0e0', '#bababa', '#878787', '#4d4d4d'],
-  BrewerRdGy10: ['#67001f', '#b2182b', '#d6604d', '#f4a582', '#fddbc7', '#e0e0e0', '#bababa', '#878787', '#4d4d4d', '#1a1a1a'],
-  BrewerRdGy11: ['#67001f', '#b2182b', '#d6604d', '#f4a582', '#fddbc7', '#ffffff', '#e0e0e0', '#bababa', '#878787', '#4d4d4d', '#1a1a1a'],
+  BrewerRdGy10: [
+    '#67001f',
+    '#b2182b',
+    '#d6604d',
+    '#f4a582',
+    '#fddbc7',
+    '#e0e0e0',
+    '#bababa',
+    '#878787',
+    '#4d4d4d',
+    '#1a1a1a',
+  ],
+  BrewerRdGy11: [
+    '#67001f',
+    '#b2182b',
+    '#d6604d',
+    '#f4a582',
+    '#fddbc7',
+    '#ffffff',
+    '#e0e0e0',
+    '#bababa',
+    '#878787',
+    '#4d4d4d',
+    '#1a1a1a',
+  ],
   BrewerRdYlBu3: ['#fc8d59', '#ffffbf', '#91bfdb'],
   BrewerRdYlBu4: ['#d7191c', '#fdae61', '#abd9e9', '#2c7bb6'],
   BrewerRdYlBu5: ['#d7191c', '#fdae61', '#ffffbf', '#abd9e9', '#2c7bb6'],
@@ -190,8 +328,31 @@ export const COLOR_SCHEMES = {
   BrewerRdYlBu7: ['#d73027', '#fc8d59', '#fee090', '#ffffbf', '#e0f3f8', '#91bfdb', '#4575b4'],
   BrewerRdYlBu8: ['#d73027', '#f46d43', '#fdae61', '#fee090', '#e0f3f8', '#abd9e9', '#74add1', '#4575b4'],
   BrewerRdYlBu9: ['#d73027', '#f46d43', '#fdae61', '#fee090', '#ffffbf', '#e0f3f8', '#abd9e9', '#74add1', '#4575b4'],
-  BrewerRdYlBu10: ['#a50026', '#d73027', '#f46d43', '#fdae61', '#fee090', '#e0f3f8', '#abd9e9', '#74add1', '#4575b4', '#313695'],
-  BrewerRdYlBu11: ['#a50026', '#d73027', '#f46d43', '#fdae61', '#fee090', '#ffffbf', '#e0f3f8', '#abd9e9', '#74add1', '#4575b4', '#313695'],
+  BrewerRdYlBu10: [
+    '#a50026',
+    '#d73027',
+    '#f46d43',
+    '#fdae61',
+    '#fee090',
+    '#e0f3f8',
+    '#abd9e9',
+    '#74add1',
+    '#4575b4',
+    '#313695',
+  ],
+  BrewerRdYlBu11: [
+    '#a50026',
+    '#d73027',
+    '#f46d43',
+    '#fdae61',
+    '#fee090',
+    '#ffffbf',
+    '#e0f3f8',
+    '#abd9e9',
+    '#74add1',
+    '#4575b4',
+    '#313695',
+  ],
   BrewerSpectral3: ['#fc8d59', '#ffffbf', '#99d594'],
   BrewerSpectral4: ['#d7191c', '#fdae61', '#abdda4', '#2b83ba'],
   BrewerSpectral5: ['#d7191c', '#fdae61', '#ffffbf', '#abdda4', '#2b83ba'],
@@ -199,8 +360,31 @@ export const COLOR_SCHEMES = {
   BrewerSpectral7: ['#d53e4f', '#fc8d59', '#fee08b', '#ffffbf', '#e6f598', '#99d594', '#3288bd'],
   BrewerSpectral8: ['#d53e4f', '#f46d43', '#fdae61', '#fee08b', '#e6f598', '#abdda4', '#66c2a5', '#3288bd'],
   BrewerSpectral9: ['#d53e4f', '#f46d43', '#fdae61', '#fee08b', '#ffffbf', '#e6f598', '#abdda4', '#66c2a5', '#3288bd'],
-  BrewerSpectral10: ['#9e0142', '#d53e4f', '#f46d43', '#fdae61', '#fee08b', '#e6f598', '#abdda4', '#66c2a5', '#3288bd', '#5e4fa2'],
-  BrewerSpectral11: ['#9e0142', '#d53e4f', '#f46d43', '#fdae61', '#fee08b', '#ffffbf', '#e6f598', '#abdda4', '#66c2a5', '#3288bd', '#5e4fa2'],
+  BrewerSpectral10: [
+    '#9e0142',
+    '#d53e4f',
+    '#f46d43',
+    '#fdae61',
+    '#fee08b',
+    '#e6f598',
+    '#abdda4',
+    '#66c2a5',
+    '#3288bd',
+    '#5e4fa2',
+  ],
+  BrewerSpectral11: [
+    '#9e0142',
+    '#d53e4f',
+    '#f46d43',
+    '#fdae61',
+    '#fee08b',
+    '#ffffbf',
+    '#e6f598',
+    '#abdda4',
+    '#66c2a5',
+    '#3288bd',
+    '#5e4fa2',
+  ],
   BrewerRdYlGn3: ['#fc8d59', '#ffffbf', '#91cf60'],
   BrewerRdYlGn4: ['#d7191c', '#fdae61', '#a6d96a', '#1a9641'],
   BrewerRdYlGn5: ['#d7191c', '#fdae61', '#ffffbf', '#a6d96a', '#1a9641'],
@@ -208,8 +392,31 @@ export const COLOR_SCHEMES = {
   BrewerRdYlGn7: ['#d73027', '#fc8d59', '#fee08b', '#ffffbf', '#d9ef8b', '#91cf60', '#1a9850'],
   BrewerRdYlGn8: ['#d73027', '#f46d43', '#fdae61', '#fee08b', '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850'],
   BrewerRdYlGn9: ['#d73027', '#f46d43', '#fdae61', '#fee08b', '#ffffbf', '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850'],
-  BrewerRdYlGn10: ['#a50026', '#d73027', '#f46d43', '#fdae61', '#fee08b', '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850', '#006837'],
-  BrewerRdYlGn11: ['#a50026', '#d73027', '#f46d43', '#fdae61', '#fee08b', '#ffffbf', '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850', '#006837'],
+  BrewerRdYlGn10: [
+    '#a50026',
+    '#d73027',
+    '#f46d43',
+    '#fdae61',
+    '#fee08b',
+    '#d9ef8b',
+    '#a6d96a',
+    '#66bd63',
+    '#1a9850',
+    '#006837',
+  ],
+  BrewerRdYlGn11: [
+    '#a50026',
+    '#d73027',
+    '#f46d43',
+    '#fdae61',
+    '#fee08b',
+    '#ffffbf',
+    '#d9ef8b',
+    '#a6d96a',
+    '#66bd63',
+    '#1a9850',
+    '#006837',
+  ],
   BrewerAccent3: ['#7fc97f', '#beaed4', '#fdc086'],
   BrewerAccent4: ['#7fc97f', '#beaed4', '#fdc086', '#ffff99'],
   BrewerAccent5: ['#7fc97f', '#beaed4', '#fdc086', '#ffff99', '#386cb0'],
@@ -229,9 +436,45 @@ export const COLOR_SCHEMES = {
   BrewerPaired7: ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c', '#fdbf6f'],
   BrewerPaired8: ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c', '#fdbf6f', '#ff7f00'],
   BrewerPaired9: ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c', '#fdbf6f', '#ff7f00', '#cab2d6'],
-  BrewerPaired10: ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c', '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a'],
-  BrewerPaired11: ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c', '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a', '#ffff99'],
-  BrewerPaired12: ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c', '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a', '#ffff99', '#b15928'],
+  BrewerPaired10: [
+    '#a6cee3',
+    '#1f78b4',
+    '#b2df8a',
+    '#33a02c',
+    '#fb9a99',
+    '#e31a1c',
+    '#fdbf6f',
+    '#ff7f00',
+    '#cab2d6',
+    '#6a3d9a',
+  ],
+  BrewerPaired11: [
+    '#a6cee3',
+    '#1f78b4',
+    '#b2df8a',
+    '#33a02c',
+    '#fb9a99',
+    '#e31a1c',
+    '#fdbf6f',
+    '#ff7f00',
+    '#cab2d6',
+    '#6a3d9a',
+    '#ffff99',
+  ],
+  BrewerPaired12: [
+    '#a6cee3',
+    '#1f78b4',
+    '#b2df8a',
+    '#33a02c',
+    '#fb9a99',
+    '#e31a1c',
+    '#fdbf6f',
+    '#ff7f00',
+    '#cab2d6',
+    '#6a3d9a',
+    '#ffff99',
+    '#b15928',
+  ],
   BrewerPastel13: ['#fbb4ae', '#b3cde3', '#ccebc5'],
   BrewerPastel14: ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4'],
   BrewerPastel15: ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4', '#fed9a6'],
@@ -265,9 +508,45 @@ export const COLOR_SCHEMES = {
   BrewerSet37: ['#8dd3c7', '#ffffb3', '#bebada', '#fb8072', '#80b1d3', '#fdb462', '#b3de69'],
   BrewerSet38: ['#8dd3c7', '#ffffb3', '#bebada', '#fb8072', '#80b1d3', '#fdb462', '#b3de69', '#fccde5'],
   BrewerSet39: ['#8dd3c7', '#ffffb3', '#bebada', '#fb8072', '#80b1d3', '#fdb462', '#b3de69', '#fccde5', '#d9d9d9'],
-  BrewerSet310: ['#8dd3c7', '#ffffb3', '#bebada', '#fb8072', '#80b1d3', '#fdb462', '#b3de69', '#fccde5', '#d9d9d9', '#bc80bd'],
-  BrewerSet311: ['#8dd3c7', '#ffffb3', '#bebada', '#fb8072', '#80b1d3', '#fdb462', '#b3de69', '#fccde5', '#d9d9d9', '#bc80bd', '#ccebc5'],
-  BrewerSet312: ['#8dd3c7', '#ffffb3', '#bebada', '#fb8072', '#80b1d3', '#fdb462', '#b3de69', '#fccde5', '#d9d9d9', '#bc80bd', '#ccebc5', '#ffed6f'],
+  BrewerSet310: [
+    '#8dd3c7',
+    '#ffffb3',
+    '#bebada',
+    '#fb8072',
+    '#80b1d3',
+    '#fdb462',
+    '#b3de69',
+    '#fccde5',
+    '#d9d9d9',
+    '#bc80bd',
+  ],
+  BrewerSet311: [
+    '#8dd3c7',
+    '#ffffb3',
+    '#bebada',
+    '#fb8072',
+    '#80b1d3',
+    '#fdb462',
+    '#b3de69',
+    '#fccde5',
+    '#d9d9d9',
+    '#bc80bd',
+    '#ccebc5',
+  ],
+  BrewerSet312: [
+    '#8dd3c7',
+    '#ffffb3',
+    '#bebada',
+    '#fb8072',
+    '#80b1d3',
+    '#fdb462',
+    '#b3de69',
+    '#fccde5',
+    '#d9d9d9',
+    '#bc80bd',
+    '#ccebc5',
+    '#ffed6f',
+  ],
   CartoBurg: ['#ffc6c4', '#f4a3a8', '#e38191', '#cc607d', '#ad466c', '#8b3058', '#672044'],
   CartoBurgYl: ['#fbe6c5', '#f5ba98', '#ee8a82', '#dc7176', '#c8586c', '#9c3f5d', '#70284a'],
   CartoRedOr: ['#f6d2a9', '#f5b78e', '#f19c7c', '#ea8171', '#dd686c', '#ca5268', '#b13f64'],
@@ -293,12 +572,12 @@ export const COLOR_SCHEMES = {
   CartoTemps: ['#009392', '#39b185', '#9ccb86', '#e9e29c', '#eeb479', '#e88471', '#cf597e'],
   CartoTealRose: ['#009392', '#72aaa1', '#b1c7b3', '#f1eac8', '#e5b9ad', '#d98994', '#d0587e'],
   CartoTropic: ['#009B9E', '#42B7B9', '#A7D3D4', '#F1F1F1', '#E4C1D9', '#D691C1', '#C75DAB'],
-  CartoEarth: ['#A16928', '#bd925a', '#d6bd8d', '#edeac2', '#b5c8b8', '#79a7ac', '#2887a1']
-} satisfies { [key: string]: Array<HEXColor> };
+  CartoEarth: ['#A16928', '#bd925a', '#d6bd8d', '#edeac2', '#b5c8b8', '#79a7ac', '#2887a1'],
+} satisfies {[key: string]: Array<HEXColor>};
 
 const colorSchemeNames = Object.keys(COLOR_SCHEMES) as Array<keyof typeof COLOR_SCHEMES>;
 
-function isValidColorSchemeName (name: string): name is (keyof typeof COLOR_SCHEMES) {
+function isValidColorSchemeName(name: string): name is keyof typeof COLOR_SCHEMES {
   return (colorSchemeNames as readonly string[]).includes(name);
 }
 
@@ -307,36 +586,35 @@ const hexToIntColorRegexp = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i;
 const hexToIntColor = (color: HEXColor): [number, number, number] => {
   const result = hexToIntColorRegexp.exec(color);
   if (result !== null) {
-    return [
-      parseInt(result[1], 16),
-      parseInt(result[2], 16),
-      parseInt(result[3], 16)
-    ];
+    return [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)];
   } else {
     throw new Error(`Cannot parse hex color "${color}"`);
   }
 };
 
 const intervals = (min: number, max: number, n: number): Array<number> =>
-  Array.from({length: n}, (_x, i) =>
-    min + i * (max - min) / (n - 1)
-  );
+  Array.from({length: n}, (_x, i) => min + (i * (max - min)) / (n - 1));
 
 const thresholds = (min: number, max: number, n: number): Array<number> =>
-  Array.from({length: n - 1}, (_x, i) =>
-    min + (i + 1) * (max - min) / n
-  );
+  Array.from({length: n - 1}, (_x, i) => min + ((i + 1) * (max - min)) / n);
 
 export type ColorScaleParams = {
-  customColors?: Array<HEXColor>,
-  colorScheme?: string,
-  min: number,
-  max: number,
-  isReverse?: boolean,
-  isContinuous?: boolean
-}
+  customColors?: Array<HEXColor>;
+  colorScheme?: string;
+  min: number;
+  max: number;
+  isReverse?: boolean;
+  isContinuous?: boolean;
+};
 
-const colorScale = ({ colorScheme, customColors, min, max, isReverse = false, isContinuous = false }: ColorScaleParams) => {
+const colorScale = ({
+  colorScheme,
+  customColors,
+  min,
+  max,
+  isReverse = false,
+  isContinuous = false,
+}: ColorScaleParams) => {
   let colors: Array<HEXColor>;
 
   if (colorScheme) {
@@ -362,6 +640,6 @@ const colorScale = ({ colorScheme, customColors, min, max, isReverse = false, is
     const domain = thresholds(min, max, range.length);
     return scaleThreshold(domain, range);
   }
-}
+};
 
-export { colorScale, colorSchemeNames };
+export {colorScale, colorSchemeNames};
