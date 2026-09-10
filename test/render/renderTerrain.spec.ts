@@ -36,6 +36,15 @@ describe('renderTerrain', () => {
     expect(px0(renderTerrain(data, {...baseOptions, noData: 99}))).toEqual([1, 134, 160, 255]);
   });
 
+  test('NaN noData pixel is encoded as elevation 0 (sea level), not -10000 m', () => {
+    // GDAL_NODATA = NaN: px === noData is never true, so the guard must also check finiteness.
+    expect(px0(renderTerrain(makeFloat(NaN), {...baseOptions, noData: NaN}))).toEqual([1, 134, 160, 255]);
+  });
+
+  test('Infinity pixel (out-of-extent fill value) is encoded as elevation 0 (sea level)', () => {
+    expect(px0(renderTerrain(makeFloat(Infinity), baseOptions))).toEqual([1, 134, 160, 255]);
+  });
+
   test('Everest (~8848 m) encodes correctly', () => {
     // v = (8848 + 10000) / 0.1 = 188480 → R=2, G=224, B=64
     expect(px0(renderTerrain(makeFloat(8848), baseOptions))).toEqual([2, 224, 64, 255]);
