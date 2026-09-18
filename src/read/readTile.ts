@@ -43,25 +43,39 @@ const arrayTypeFor = (image: GeoTIFFImage): TypedArrayConstructor | undefined =>
   return ARRAY_TYPES[sampleFormat]?.[bitsPerSample];
 };
 
-// Compressions whose decoder is built from the tile tags below: no compression, LZW, JPEG,
-// Deflate, PackBits and ZSTD. LERC and WebP take parameters of their own, so they are left to
-// readRasters.
-const SUPPORTED_COMPRESSIONS = new Set([1, 5, 7, 8, 32773, 32946, 50000]);
+// Compressions whose decoder geotiff.js can build from public TIFF tags: no compression, LZW,
+// JPEG, Deflate, PackBits, ZSTD, LERC and WebP. Each of the last three needs one extra tag or
+// value, added in bindDecoder below; every other compression is left to readRasters.
+const SUPPORTED_COMPRESSIONS = new Set([1, 5, 7, 8, 32773, 32946, 50000, 34887, 50001]);
 const JPEG = 7;
+const LERC = 34887;
+const WEBP = 50001;
 
 /**
  * The decoder geotiff.js would use for this image, bound to the worker pool. Beyond the predictor
- * pass, which geotiff.js runs inside the decoder, these parameters are not used.
+ * pass, which geotiff.js runs inside the decoder, these parameters are not used, except for the
+ * per-compression extras below: JPEG needs its shared Huffman tables, LERC its own header
+ * parameters, and WebP how many of the 3 or 4 channels it decodes to keep.
  */
-const bindDecoder = async (image: GeoTIFFImage, compression: number, predictor: number, pool: Pool) =>
-  pool.bindParameters(compression, {
+const bindDecoder = async (image: GeoTIFFImage, compression: number, predictor: number, pool: Pool) => {
+  const extra =
+    compression === JPEG
+      ? {JPEGTables: await image.fileDirectory.loadValue('JPEGTables')}
+      : compression === LERC
+        ? {LercParameters: await image.fileDirectory.loadValue('LercParameters')}
+        : compression === WEBP
+          ? {samplesPerPixel: image.getSamplesPerPixel()}
+          : {};
+
+  return pool.bindParameters(compression, {
     tileWidth: image.getTileWidth(),
     tileHeight: image.getTileHeight(),
     planarConfiguration: image.planarConfiguration,
     bitsPerSample: (await image.fileDirectory.loadValue('BitsPerSample')) ?? image.getBitsPerSample(0),
     predictor,
-    ...(compression === JPEG ? {JPEGTables: await image.fileDirectory.loadValue('JPEGTables')} : {}),
+    ...extra,
   });
+};
 
 /**
  * Maps every output index to the source index it samples, the way geotiff.js' nearest neighbour

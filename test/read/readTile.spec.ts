@@ -1,4 +1,4 @@
-import {test, expect} from 'vitest';
+import {test, expect, beforeEach} from 'vitest';
 
 import {GeoTIFFImage, Pool} from 'geotiff';
 import {readTileFast} from '../../src/read/readTile';
@@ -38,7 +38,8 @@ const fakeImage = (overrides: Record<string, unknown> = {}, tags: Record<string,
   return image as GeoTIFFImage;
 };
 
-const fakePool = {bindParameters: () => ({})} as unknown as Pool;
+const bindParameters = vi.fn(() => ({}));
+const fakePool = {bindParameters} as unknown as Pool;
 
 const read = (image: GeoTIFFImage, window: [number, number, number, number], width = 4, height = 4, fillValue = 0) =>
   readTileFast(image, {window, width, height, fillValue, pool: fakePool});
@@ -48,6 +49,8 @@ const pixel = (raster: ArrayLike<number> | undefined, x: number, y: number, widt
   raster && [raster[(y * width + x) * 2], raster[(y * width + x) * 2 + 1]];
 
 describe('readTileFast', () => {
+
+  beforeEach(() => bindParameters.mockClear());
 
   test('assembles a window that covers the whole image, across every block', async () => {
     const raster = await read(fakeImage(), [0, 0, 4, 4]);
@@ -101,16 +104,32 @@ describe('readTileFast', () => {
   });
 
   test('reads JPEG, passing on the tables its decoder needs', async () => {
-    const jpeg = fakeImage({}, {Compression: 7, JPEGTables: new Uint8Array([1, 2]), BitsPerSample: new Uint16Array([8, 8])});
+    const tables = new Uint8Array([1, 2]);
+    const jpeg = fakeImage({}, {Compression: 7, JPEGTables: tables, BitsPerSample: new Uint16Array([8, 8])});
+
     expect(await read(jpeg, [0, 0, 4, 4])).toBeDefined();
+    expect(bindParameters).toHaveBeenCalledWith(7, expect.objectContaining({JPEGTables: tables}));
   });
 
-  test('hands back compressions whose decoder needs parameters of its own', async () => {
-    const lerc = fakeImage({}, {Compression: 34887, BitsPerSample: new Uint16Array([8, 8])});
-    expect(await read(lerc, [0, 0, 4, 4])).toBeUndefined();
+  test('reads LERC, passing on the header parameters its decoder needs', async () => {
+    const lercParameters = new Uint32Array([4, 0]);
+    const lerc = fakeImage({}, {Compression: 34887, LercParameters: lercParameters, BitsPerSample: new Uint16Array([8, 8])});
 
+    expect(await read(lerc, [0, 0, 4, 4])).toBeDefined();
+    expect(bindParameters).toHaveBeenCalledWith(34887, expect.objectContaining({LercParameters: lercParameters}));
+  });
+
+  test('reads WebP, passing on the sample count its decoder needs', async () => {
     const webp = fakeImage({}, {Compression: 50001, BitsPerSample: new Uint16Array([8, 8])});
-    expect(await read(webp, [0, 0, 4, 4])).toBeUndefined();
+
+    expect(await read(webp, [0, 0, 4, 4])).toBeDefined();
+    expect(bindParameters).toHaveBeenCalledWith(50001, expect.objectContaining({samplesPerPixel: 2}));
+  });
+
+  test('hands back compressions whose decoder needs parameters this shortcut does not derive', async () => {
+    // Old-style JPEG (6): geotiff.js explicitly refuses to decode it at all.
+    const oldJpeg = fakeImage({}, {Compression: 6, BitsPerSample: new Uint16Array([8, 8])});
+    expect(await read(oldJpeg, [0, 0, 4, 4])).toBeUndefined();
   });
 
   test('hands back a predictor on a striped image, where the block geometry is not exact', async () => {
