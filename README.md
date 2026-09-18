@@ -583,16 +583,16 @@ library reads, and which marks the padding around a rotated or clipped image exa
 `-dstnodata`: JPEG artifacts would leave a dark fringe of pixels that no longer match it.
 
 ```bash
-docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdalwarp /srv/<source>.tif /srv/<target>.tif -of COG -co BLOCKSIZE=256 -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=JPEG -co OVERVIEWS=IGNORE_EXISTING
+gdalwarp source.tif target.tif -of COG -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=JPEG -co OVERVIEWS=IGNORE_EXISTING
 ```
 
 #### RGB Image (lossless compression)
 
 Here GDAL keeps the alpha band it adds as a fourth sample, which is read as transparency, so the
-default is what you want:
+default is what you want. Use ZSTD or DEFLATE which are faster to decode in the browser than LZW:
 
 ```bash
-docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdalwarp /srv/<source>.tif /srv/<target>.tif -of COG -co BLOCKSIZE=256 -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=DEFLATE -co OVERVIEWS=IGNORE_EXISTING
+gdalwarp source.tif target.tif -of COG -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=DEFLATE -co OVERVIEWS=IGNORE_EXISTING
 ```
 
 To save that fourth band, drop it with `-co ADD_ALPHA=NO` and use a `noData` value instead.
@@ -601,8 +601,8 @@ too. Mind where the value is declared: when `TILING_SCHEME` makes the COG driver
 `gdalwarp` does not carry `-dstnodata` into the output file, so declare it on the **source**:
 
 ```bash
-docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdal_edit.py -a_nodata 0 /srv/<source>.tif
-docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdalwarp /srv/<source>.tif /srv/<target>.tif -of COG -co BLOCKSIZE=256 -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=DEFLATE -co OVERVIEWS=IGNORE_EXISTING -co ADD_ALPHA=NO
+gdal_edit.py -a_nodata 0 source.tif
+gdalwarp source.tif target.tif -of COG -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=DEFLATE -co OVERVIEWS=IGNORE_EXISTING -co ADD_ALPHA=NO
 ```
 
 #### Digital Elevation Model
@@ -611,17 +611,31 @@ docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdalwarp /srv/<s
 only works for `Float32`/`Float64` rasters though: on an integer one, GDAL rounds it to 0 and warns.
 Integer data needs a value outside its real range instead, such as `-a_nodata -32768`.
 
+For float DEMS use LERC compression. Another strategy is to convert to `Int16` and scale the values, which is what Mapbox Terrain-RGB does.
+
 As above, the value goes on the source, not in the warp:
 
 ```bash
-docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdal_edit.py -a_nodata nan /srv/<source>.tif
-docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdalwarp /srv/<source>.tif /srv/<target>.tiff -of COG -co BLOCKSIZE=256 -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=DEFLATE -co RESAMPLING=BILINEAR -co OVERVIEW_RESAMPLING=NEAREST -co OVERVIEWS=IGNORE_EXISTING -co ADD_ALPHA=NO
+gdal_edit.py -a_nodata nan source.tif
+gdalwarp source.tif target.tiff -of COG -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=LERC -co MAX_Z_ERROR=0.1 -co RESAMPLING=BILINEAR -co OVERVIEW_RESAMPLING=AVERAGE -co OVERVIEWS=IGNORE_EXISTING -co ADD_ALPHA=NO
+```
+
+#### Aligning tiles to the tiling scheme
+
+Only the full-resolution image is guaranteed to line up with `TILING_SCHEME`; overview levels are
+usually offset by a fraction of a tile, so a tile there needs up to 4 GeoTIFF blocks instead of 1.
+`ALIGNED_LEVELS=N` aligns the top `N` levels, padding the image out to the next tile boundary —
+cheap with `SPARSE_OK=YES`, since the padding is uniform `noData`. Growth isn't linear, so compare
+`gdalinfo <target>.tif | grep 'Size is'` across a few values of `N` before picking the optimal one.
+
+```bash
+gdalwarp source.tif target.tif -of COG -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=LERC -co ALIGNED_LEVELS=8 -co SPARSE_OK=YES -co OVERVIEWS=IGNORE_EXISTING
 ```
 
 #### Checking what a COG declares
 
 ```bash
-gdalinfo <target>.tif | grep -E 'NoData|Mask Flags'
+gdalinfo target.tif | grep -E 'NoData|Mask Flags'
 ```
 
 A COG with no `NoData Value`, no `Mask Flags: PER_DATASET` and no `ColorInterp=Alpha` band has no
