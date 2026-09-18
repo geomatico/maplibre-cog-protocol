@@ -1,4 +1,11 @@
-import {type BlockedSourceOptions, fromUrl, type GeoTIFF, Pool, type RemoteSourceOptions} from 'geotiff';
+import {
+  type BlockedSourceOptions,
+  fromUrl,
+  type GeoTIFF,
+  type GeoTIFFImage,
+  Pool,
+  type RemoteSourceOptions,
+} from 'geotiff';
 import QuickLRU from 'quick-lru';
 
 import {parseNoData} from '../noData';
@@ -9,6 +16,7 @@ import {
   tileIndexToPixelWindow,
   zoomFromResolution,
 } from './math';
+import {readTileFast} from './readTile';
 
 const ONE_HOUR_IN_MILLISECONDS = 60 * 60 * 1000;
 
@@ -179,6 +187,30 @@ const CogReader = (url: string) => {
     return pixelWindowToTileCoverage(window, selectedImage.getWidth(), selectedImage.getHeight(), tileSize);
   };
 
+  /**
+   * Reads an interleaved raster, preferring the typed-array shortcut in readTile.ts and falling
+   * back to geotiff.js for the layouts it does not cover.
+   */
+  const readTile = async (
+    image: GeoTIFFImage,
+    options: {window: [number, number, number, number]; width: number; height: number; fillValue: number; pool: Pool},
+  ): Promise<TypedArray> => {
+    const fast = await readTileFast(image, options);
+    if (fast) return fast;
+
+    const {window, width, height, fillValue} = options;
+    // interleaved ReadRasterResult is always a single TypedArray
+    return (await image.readRasters({
+      window,
+      width,
+      height,
+      interleave: true,
+      resampleMethod: 'nearest',
+      pool,
+      fillValue,
+    })) as TypedArray;
+  };
+
   function getRawTile(tileIndex: TileIndex, options?: {mask?: false; tileSize?: number}): Promise<TypedArray>;
   function getRawTile(tileIndex: TileIndex, options: {mask: true; tileSize?: number}): Promise<TypedArray | null>;
   async function getRawTile(
@@ -211,15 +243,7 @@ const CogReader = (url: string) => {
       selectedImage.getHeight(),
     );
 
-    const tile = selectedImage.readRasters({
-      window: window,
-      width: tileSize,
-      height: tileSize,
-      interleave: true,
-      resampleMethod: 'nearest',
-      pool,
-      fillValue,
-    }) as Promise<TypedArray>; // interleaved ReadRasterResult is always a single TypedArray
+    const tile = readTile(selectedImage, {window, width: tileSize, height: tileSize, fillValue, pool});
 
     tileCache.set(cacheKey, tile);
     return tile;
