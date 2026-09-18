@@ -1,6 +1,7 @@
 import {describe, expect, test} from 'vitest';
 
 import {fromBlackIsZero, fromCIELab, fromCMYK, fromPalette, fromRGB, fromWhiteIsZero, fromYCbCr} from '../../src/render/rgba';
+import {noDataTest} from '../../src/noData';
 
 const PIXELS = 256 * 256;
 
@@ -14,46 +15,66 @@ const makeData = (bands: number, firstPixel: number[]): Uint8Array => {
 
 const px0 = (result: Uint8ClampedArray) => Array.from(result.slice(0, 4));
 
+// The noData test these renderers take, for a Uint8 raster declaring the given noData value.
+const noData = (value?: number) => noDataTest(value, new Uint8Array(0));
+
 describe('fromWhiteIsZero', () => {
   test('max value maps to black, opaque', () => {
-    expect(px0(fromWhiteIsZero(makeData(1, [255]), 255, 0))).toEqual([0, 0, 0, 255]);
+    expect(px0(fromWhiteIsZero(makeData(1, [255]), 255, noData(0)))).toEqual([0, 0, 0, 255]);
   });
 
-  test('zero maps to white and transparent when zero is the transparentValue', () => {
-    expect(px0(fromWhiteIsZero(makeData(1, [0]), 255, 0))).toEqual([255, 255, 255, 0]);
+  test('zero maps to white and transparent when zero is the noData value', () => {
+    expect(px0(fromWhiteIsZero(makeData(1, [0]), 255, noData(0)))).toEqual([255, 255, 255, 0]);
   });
 
-  test('zero maps to white and opaque when zero is not the transparentValue', () => {
-    expect(px0(fromWhiteIsZero(makeData(1, [0]), 255, 99))).toEqual([255, 255, 255, 255]);
+  test('zero maps to white and opaque when zero is not the noData value', () => {
+    expect(px0(fromWhiteIsZero(makeData(1, [0]), 255, noData(99)))).toEqual([255, 255, 255, 255]);
   });
 });
 
 describe('fromBlackIsZero', () => {
   test('max value maps to white, opaque', () => {
-    expect(px0(fromBlackIsZero(makeData(1, [255]), 255, 0))).toEqual([255, 255, 255, 255]);
+    expect(px0(fromBlackIsZero(makeData(1, [255]), 255, noData(0)))).toEqual([255, 255, 255, 255]);
   });
 
-  test('zero maps to black and transparent when zero is the transparentValue', () => {
-    expect(px0(fromBlackIsZero(makeData(1, [0]), 255, 0))).toEqual([0, 0, 0, 0]);
+  test('zero maps to black and transparent when zero is the noData value', () => {
+    expect(px0(fromBlackIsZero(makeData(1, [0]), 255, noData(0)))).toEqual([0, 0, 0, 0]);
+  });
+
+  test('NaN noData makes NaN samples transparent', () => {
+    const data = new Float32Array(PIXELS);
+    data[0] = NaN;
+    expect(px0(fromBlackIsZero(data, 255, noDataTest(NaN, data)))[3]).toBe(0);
+  });
+
+  test('a Float32 noData value is compared with float32 precision', () => {
+    // A Float32Array holds -9999.099609375, which is not === -9999.1
+    const data = new Float32Array(PIXELS);
+    data[0] = -9999.1;
+    expect(px0(fromBlackIsZero(data, 255, noDataTest(-9999.1, data)))[3]).toBe(0);
+  });
+
+  test('no pixel is transparent when no noData value is declared', () => {
+    expect(px0(fromBlackIsZero(makeData(1, [0]), 255, noData(undefined)))[3]).toBe(255);
   });
 
   test('mid-range value maps to the matching gray shade', () => {
     // (100/255)*255 = 100 exactly
-    expect(px0(fromBlackIsZero(makeData(1, [100]), 255, 0))).toEqual([100, 100, 100, 255]);
+    expect(px0(fromBlackIsZero(makeData(1, [100]), 255, noData(0)))).toEqual([100, 100, 100, 255]);
   });
 });
 
 describe('fromRGB', () => {
   test('three-band pixel maps to RGBA, opaque', () => {
-    expect(px0(fromRGB(makeData(3, [100, 150, 200]), 0))).toEqual([100, 150, 200, 255]);
+    expect(px0(fromRGB(makeData(3, [100, 150, 200]), noData(0)))).toEqual([100, 150, 200, 255]);
   });
 
-  test('pixel is transparent when all three channels equal the transparentValue', () => {
-    expect(px0(fromRGB(makeData(3, [0, 0, 0]), 0))).toEqual([0, 0, 0, 0]);
+  test('pixel is transparent when all three channels equal the noData value', () => {
+    expect(px0(fromRGB(makeData(3, [0, 0, 0]), noData(0)))).toEqual([0, 0, 0, 0]);
   });
 
-  test('pixel is opaque when only some channels match the transparentValue', () => {
-    expect(px0(fromRGB(makeData(3, [100, 0, 0]), 0))).toEqual([100, 0, 0, 255]);
+  test('pixel is opaque when only some channels match the noData value', () => {
+    expect(px0(fromRGB(makeData(3, [100, 0, 0]), noData(0)))).toEqual([100, 0, 0, 255]);
   });
 });
 
@@ -63,15 +84,15 @@ describe('fromPalette', () => {
   const colorMap = [0, 65280, 25600, 0, 51200, 65280];
 
   test('palette index 0 maps to the correct colour, opaque', () => {
-    expect(px0(fromPalette(makeData(1, [0]), colorMap, 99))).toEqual([0, 100, 200, 255]);
+    expect(px0(fromPalette(makeData(1, [0]), colorMap, noData(99)))).toEqual([0, 100, 200, 255]);
   });
 
-  test('pixel is transparent when the palette index equals the transparentValue', () => {
-    expect(px0(fromPalette(makeData(1, [0]), colorMap, 0))[3]).toBe(0);
+  test('pixel is transparent when the palette index equals the noData value', () => {
+    expect(px0(fromPalette(makeData(1, [0]), colorMap, noData(0)))[3]).toBe(0);
   });
 
   test('palette index 1 maps to the correct colour', () => {
-    expect(px0(fromPalette(makeData(1, [1]), colorMap, 0))).toEqual([255, 0, 255, 255]);
+    expect(px0(fromPalette(makeData(1, [1]), colorMap, noData(0)))).toEqual([255, 0, 255, 255]);
   });
 });
 
@@ -79,45 +100,62 @@ describe('fromCMYK', () => {
   test('pure cyan (C=255) produces zero red', () => {
     // R = 255 * ((255-255)/256) * ((255-0)/256) = 0
     // G = B = 255 * (255/256)^2 ≈ 253
-    const result = px0(fromCMYK(makeData(4, [255, 0, 0, 0]), 99));
+    const result = px0(fromCMYK(makeData(4, [255, 0, 0, 0]), noData(99)));
     expect(result[0]).toBe(0);
     expect(result[1]).toBe(253);
     expect(result[2]).toBe(253);
     expect(result[3]).toBe(255);
   });
 
-  test('pixel is transparent when all four channels equal the transparentValue', () => {
-    expect(px0(fromCMYK(makeData(4, [0, 0, 0, 0]), 0))[3]).toBe(0);
+  test('pixel is transparent when all four channels equal the noData value', () => {
+    expect(px0(fromCMYK(makeData(4, [0, 0, 0, 0]), noData(0)))[3]).toBe(0);
   });
 
   test('pure black (K=255) maps to (0,0,0)', () => {
     // R = G = B = 255 * (255/256) * (0/256) = 0
-    expect(px0(fromCMYK(makeData(4, [0, 0, 0, 255]), 99))).toEqual([0, 0, 0, 255]);
+    expect(px0(fromCMYK(makeData(4, [0, 0, 0, 255]), noData(99)))).toEqual([0, 0, 0, 255]);
   });
 });
 
 describe('fromYCbCr', () => {
   test('neutral YCbCr (128,128,128) maps to neutral gray RGB', () => {
     // Y=128, Cb=128, Cr=128 — all chroma offsets (Cb-128, Cr-128) cancel out
-    expect(px0(fromYCbCr(makeData(3, [128, 128, 128]), 0))).toEqual([128, 128, 128, 255]);
+    expect(px0(fromYCbCr(makeData(3, [128, 128, 128]), noData(0)))).toEqual([128, 128, 128, 255]);
   });
 
-  test('pixel is transparent when all three channels equal the transparentValue', () => {
-    expect(px0(fromYCbCr(makeData(3, [0, 0, 0]), 0))[3]).toBe(0);
+  test('pixel is transparent when the DECODED color equals the noData value', () => {
+    // Black is stored as (Y=0, Cb=128, Cr=128): that, and not raw (0,0,0), is RGB (0,0,0).
+    expect(px0(fromYCbCr(makeData(3, [0, 128, 128]), noData(0)))).toEqual([0, 0, 0, 0]);
   });
 
-  test('pixel is opaque when chroma channels differ from the transparentValue', () => {
-    // (Y=0, Cb=128, Cr=128) ≠ (0,0,0), so not transparent
-    expect(px0(fromYCbCr(makeData(3, [0, 128, 128]), 0))[3]).toBe(255);
+  test('pixel is opaque when the raw channels are all zero, which is not black but green', () => {
+    // Raw (0,0,0) decodes to RGB (0,135,0): no encoder writes it for a noData pixel.
+    const pixel = px0(fromYCbCr(makeData(3, [0, 0, 0]), noData(0)));
+    expect(pixel[3]).toBe(255);
+    expect(pixel[1]).toBeGreaterThan(130);
+  });
+
+  test('a dark but not black pixel stays opaque', () => {
+    // (Y=3, Cb=126, Cr=133) is how GDAL stores RGB (10,0,0)
+    expect(px0(fromYCbCr(makeData(3, [3, 126, 133]), noData(0)))).toEqual([10, 0, 0, 255]);
+  });
+
+  test('every pixel is opaque when no noData value is declared', () => {
+    expect(px0(fromYCbCr(makeData(3, [0, 128, 128]), noData(undefined)))).toEqual([0, 0, 0, 255]);
   });
 });
 
 describe('fromCIELab', () => {
   test('L=100, a=0, b=0 (CIE Lab white) maps to (255,255,255)', () => {
-    expect(px0(fromCIELab(makeData(3, [100, 0, 0]), 0))).toEqual([255, 255, 255, 255]);
+    expect(px0(fromCIELab(makeData(3, [100, 0, 0]), noData(0)))).toEqual([255, 255, 255, 255]);
   });
 
-  test('pixel is transparent when all channels equal the transparentValue', () => {
-    expect(px0(fromCIELab(makeData(3, [0, 0, 0]), 0))[3]).toBe(0);
+  test('pixel is transparent when all channels equal the noData value', () => {
+    expect(px0(fromCIELab(makeData(3, [0, 0, 0]), noData(0)))[3]).toBe(0);
+  });
+
+  test('noData is compared against the raw bytes, not the signed a*/b* values', () => {
+    // Raw (128, 128, 128): a* and b* become -128 once read as int8, but noData refers to the bytes.
+    expect(px0(fromCIELab(makeData(3, [128, 128, 128]), noData(128)))[3]).toBe(0);
   });
 });

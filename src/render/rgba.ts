@@ -1,15 +1,12 @@
 import {TILE_SIZE} from '../constants';
+import type {NoDataTest} from '../noData';
 import type {TypedArray} from '../types';
 
 const numPixels = TILE_SIZE * TILE_SIZE;
 
 const numBands = (data: TypedArray): number => data.length / numPixels;
 
-export function fromWhiteIsZero(
-  data: TypedArray,
-  max: number,
-  transparentValue: number,
-): Uint8ClampedArray<ArrayBuffer> {
+export function fromWhiteIsZero(data: TypedArray, max: number, isNoData: NoDataTest): Uint8ClampedArray<ArrayBuffer> {
   const rgba = new Uint8ClampedArray(numPixels * 4);
   const bands = numBands(data);
   let value: number;
@@ -18,16 +15,12 @@ export function fromWhiteIsZero(
     rgba[i * 4] = value;
     rgba[i * 4 + 1] = value;
     rgba[i * 4 + 2] = value;
-    rgba[i * 4 + 3] = data[i * bands] === transparentValue ? 0 : 255;
+    rgba[i * 4 + 3] = isNoData(data[i * bands]) ? 0 : 255;
   }
   return rgba;
 }
 
-export function fromBlackIsZero(
-  data: TypedArray,
-  max: number,
-  transparentValue: number,
-): Uint8ClampedArray<ArrayBuffer> {
+export function fromBlackIsZero(data: TypedArray, max: number, isNoData: NoDataTest): Uint8ClampedArray<ArrayBuffer> {
   const rgba = new Uint8ClampedArray(numPixels * 4);
   const bands = numBands(data);
   let value: number;
@@ -36,12 +29,12 @@ export function fromBlackIsZero(
     rgba[i * 4] = value;
     rgba[i * 4 + 1] = value;
     rgba[i * 4 + 2] = value;
-    rgba[i * 4 + 3] = data[i * bands] === transparentValue ? 0 : 255;
+    rgba[i * 4 + 3] = isNoData(data[i * bands]) ? 0 : 255;
   }
   return rgba;
 }
 
-export function fromRGB(data: TypedArray, transparentValue: number): Uint8ClampedArray<ArrayBuffer> {
+export function fromRGB(data: TypedArray, isNoData: NoDataTest): Uint8ClampedArray<ArrayBuffer> {
   const rgba = new Uint8ClampedArray(numPixels * 4);
   const bands = numBands(data);
   for (let i = 0; i < numPixels; i++) {
@@ -49,11 +42,7 @@ export function fromRGB(data: TypedArray, transparentValue: number): Uint8Clampe
     rgba[i * 4 + 1] = data[i * bands + 1];
     rgba[i * 4 + 2] = data[i * bands + 2];
     rgba[i * 4 + 3] =
-      data[i * bands] === transparentValue &&
-      data[i * bands + 1] === transparentValue &&
-      data[i * bands + 2] === transparentValue
-        ? 0
-        : 255;
+      isNoData(data[i * bands]) && isNoData(data[i * bands + 1]) && isNoData(data[i * bands + 2]) ? 0 : 255;
   }
   return rgba;
 }
@@ -61,7 +50,7 @@ export function fromRGB(data: TypedArray, transparentValue: number): Uint8Clampe
 export function fromPalette(
   data: TypedArray,
   colorMap: Array<number>,
-  transparentValue: number,
+  isNoData: NoDataTest,
 ): Uint8ClampedArray<ArrayBuffer> {
   const rgba = new Uint8ClampedArray(numPixels * 4);
   const bands = numBands(data);
@@ -72,12 +61,12 @@ export function fromPalette(
     rgba[i * 4] = (colorMap[mapIndex] / 65536) * 256;
     rgba[i * 4 + 1] = (colorMap[mapIndex + greenOffset] / 65536) * 256;
     rgba[i * 4 + 2] = (colorMap[mapIndex + blueOffset] / 65536) * 256;
-    rgba[i * 4 + 3] = data[i * bands] === transparentValue ? 0 : 255;
+    rgba[i * 4 + 3] = isNoData(data[i * bands]) ? 0 : 255;
   }
   return rgba;
 }
 
-export function fromCMYK(data: TypedArray, transparentValue: number): Uint8ClampedArray<ArrayBuffer> {
+export function fromCMYK(data: TypedArray, isNoData: NoDataTest): Uint8ClampedArray<ArrayBuffer> {
   const rgba = new Uint8ClampedArray(numPixels * 4);
   const bands = numBands(data);
   for (let i = 0; i < numPixels; i++) {
@@ -89,13 +78,12 @@ export function fromCMYK(data: TypedArray, transparentValue: number): Uint8Clamp
     rgba[i * 4] = 255 * ((255 - c) / 256) * ((255 - k) / 256);
     rgba[i * 4 + 1] = 255 * ((255 - m) / 256) * ((255 - k) / 256);
     rgba[i * 4 + 2] = 255 * ((255 - y) / 256) * ((255 - k) / 256);
-    rgba[i * 4 + 3] =
-      c === transparentValue && m === transparentValue && y === transparentValue && k === transparentValue ? 0 : 255;
+    rgba[i * 4 + 3] = isNoData(c) && isNoData(m) && isNoData(y) && isNoData(k) ? 0 : 255;
   }
   return rgba;
 }
 
-export function fromYCbCr(data: TypedArray, transparentValue: number): Uint8ClampedArray<ArrayBuffer> {
+export function fromYCbCr(data: TypedArray, isNoData: NoDataTest): Uint8ClampedArray<ArrayBuffer> {
   const rgba = new Uint8ClampedArray(numPixels * 4);
   const bands = numBands(data);
   for (let i = 0; i < numPixels; i++) {
@@ -106,7 +94,10 @@ export function fromYCbCr(data: TypedArray, transparentValue: number): Uint8Clam
     rgba[i * 4] = y + 1.402 * (cr - 0x80);
     rgba[i * 4 + 1] = y - 0.34414 * (cb - 0x80) - 0.71414 * (cr - 0x80);
     rgba[i * 4 + 2] = y + 1.772 * (cb - 0x80);
-    rgba[i * 4 + 3] = y === transparentValue && cb === transparentValue && cr === transparentValue ? 0 : 255;
+    // YCbCr is a storage encoding: GDAL exposes these images as RGB, and so noData refers to the
+    // decoded colors. Black is stored as (0, 128, 128), never as (0, 0, 0). The values read back
+    // are the ones just written, already rounded and clamped to 0..255.
+    rgba[i * 4 + 3] = isNoData(rgba[i * 4]) && isNoData(rgba[i * 4 + 1]) && isNoData(rgba[i * 4 + 2]) ? 0 : 255;
   }
   return rgba;
 }
@@ -117,7 +108,7 @@ const Zn = 1.08883;
 
 // from https://github.com/antimatter15/rgb-lab/blob/master/color.js
 
-export function fromCIELab(data: TypedArray, transparentValue: number): Uint8ClampedArray<ArrayBuffer> {
+export function fromCIELab(data: TypedArray, isNoData: NoDataTest): Uint8ClampedArray<ArrayBuffer> {
   const rgba = new Uint8ClampedArray(numPixels * 4);
   const bands = numBands(data);
 
@@ -148,7 +139,8 @@ export function fromCIELab(data: TypedArray, transparentValue: number): Uint8Cla
     rgba[4 * i] = Math.max(0, Math.min(1, r)) * 255;
     rgba[4 * i + 1] = Math.max(0, Math.min(1, g)) * 255;
     rgba[4 * i + 2] = Math.max(0, Math.min(1, b)) * 255;
-    rgba[i * 4 + 3] = L === transparentValue && a_ === transparentValue && b_ === transparentValue ? 0 : 255;
+    rgba[i * 4 + 3] =
+      isNoData(data[i * bands]) && isNoData(data[i * bands + 1]) && isNoData(data[i * bands + 2]) ? 0 : 255;
   }
   return rgba;
 }

@@ -1,8 +1,14 @@
 import {type BlockedSourceOptions, fromUrl, type GeoTIFF, Pool, type RemoteSourceOptions} from 'geotiff';
 import QuickLRU from 'quick-lru';
 
-import type {Bbox, CogMetadata, ImageMetadata, TileIndex, TileJSON, TypedArray} from '../types';
-import {mercatorBboxToGeographicBbox, tileIndexToPixelWindow, zoomFromResolution} from './math';
+import {parseNoData} from '../noData';
+import type {Bbox, CogMetadata, ImageMetadata, TileCoverage, TileIndex, TileJSON, TypedArray} from '../types';
+import {
+  mercatorBboxToGeographicBbox,
+  pixelWindowToTileCoverage,
+  tileIndexToPixelWindow,
+  zoomFromResolution,
+} from './math';
 
 const ONE_HOUR_IN_MILLISECONDS = 60 * 60 * 1000;
 
@@ -12,6 +18,24 @@ let requestHeaders: Record<string, string> | undefined;
 const geoTiffCache = new QuickLRU<string, Promise<GeoTIFF>>({maxSize: 16, maxAge: ONE_HOUR_IN_MILLISECONDS});
 const metadataCache = new QuickLRU<string, Promise<CogMetadata>>({maxSize: 16, maxAge: ONE_HOUR_IN_MILLISECONDS});
 const tileCache = new QuickLRU<string, Promise<TypedArray>>({maxSize: 1024, maxAge: ONE_HOUR_IN_MILLISECONDS});
+
+/**
+ * Locates the alpha sample a COG may declare in ExtraSamples (338), which describes the samples
+ * beyond the ones the photometric interpretation uses, at the end of every pixel. A value of 1 is
+ * associated (premultiplied) alpha, 2 is unassociated alpha, and anything else is not alpha at all.
+ */
+const alphaSample = (
+  extraSamples: ArrayLike<number> | undefined,
+  samplesPerPixel: number | undefined,
+): {alphaBand?: number; premultipliedAlpha?: boolean} => {
+  if (extraSamples === undefined || samplesPerPixel === undefined) return {};
+
+  const values = Array.from(extraSamples);
+  const index = values.findIndex((value) => value === 1 || value === 2);
+  if (index === -1) return {};
+
+  return {alphaBand: samplesPerPixel - values.length + index, premultipliedAlpha: values[index] === 1};
+};
 
 const CogReader = (url: string) => {
   if (pool === undefined) {
@@ -51,8 +75,11 @@ const CogReader = (url: string) => {
       const gdalMetadata = await firstImage.getGDALMetadata(0); // Metadata for first image and first sample
       const fileDirectory = firstImage.fileDirectory;
       const artist = await fileDirectory?.loadValue('Artist');
+      const rawNoData = await fileDirectory?.loadValue('GDAL_NODATA');
       const rawBitsPerSample = await fileDirectory?.loadValue('BitsPerSample');
       const rawColorMap = await fileDirectory?.loadValue('ColorMap');
+      const rawExtraSamples = await fileDirectory?.loadValue('ExtraSamples');
+      const samplesPerPixel = await fileDirectory?.loadValue('SamplesPerPixel');
       const bbox = mercatorBboxToGeographicBbox(firstImage.getBoundingBox() as Bbox);
 
       const imagesMetadata: Array<ImageMetadata> = [];
@@ -69,10 +96,12 @@ const CogReader = (url: string) => {
       const metadata = {
         offset: gdalMetadata && typeof gdalMetadata.OFFSET === 'string' ? parseFloat(gdalMetadata.OFFSET) : 0.0,
         scale: gdalMetadata && typeof gdalMetadata.SCALE === 'string' ? parseFloat(gdalMetadata.SCALE) : 1.0,
-        noData: firstImage.getGDALNoData() ?? undefined,
+        // The tag is parsed here rather than with getGDALNoData(), which reads "inf"/"-inf" as NaN.
+        noData: typeof rawNoData === 'string' ? parseNoData(rawNoData) : (firstImage.getGDALNoData() ?? undefined),
         photometricInterpretation: await fileDirectory?.loadValue('PhotometricInterpretation'),
         bitsPerSample: rawBitsPerSample ? Array.from(rawBitsPerSample) : undefined,
         colorMap: rawColorMap ? Array.from(rawColorMap) : undefined,
+        ...alphaSample(rawExtraSamples, samplesPerPixel ?? rawBitsPerSample?.length),
         artist: artist,
         bbox: bbox,
         images: imagesMetadata,
@@ -100,6 +129,56 @@ const CogReader = (url: string) => {
     };
   };
 
+  /**
+   * Index of the image (full resolution image, overview or mask) to read a given zoom level from,
+   * or null when the COG has no such image (only reachable for mask images).
+   */
+  const selectImageIndex = (images: Array<ImageMetadata>, z: number, mask: boolean): number | null => {
+    // Filter data or mask images
+    const filteredImages = images
+      .map((img, index) => ({...img, index}))
+      .filter((img) => (mask ? img.isMask : !img.isMask));
+
+    if (filteredImages.length === 0) return null;
+
+    // Pick the closest image to z.
+    const aboveZoomImages = filteredImages.filter((img) => Math.round(img.zoom) >= z);
+    const bestImage =
+      aboveZoomImages.length > 0
+        ? aboveZoomImages.reduce((a, b) => (a.zoom < b.zoom ? a : b)) // Closest above z
+        : filteredImages.reduce((a, b) => (a.zoom > b.zoom ? a : b)); // Closest below z (fallback)
+
+    return bestImage.index;
+  };
+
+  /**
+   * Which tile pixels are backed by actual image data. A tile at the border of the COG is only
+   * partially covered by it, and the rest of it is filled with the read fillValue, which for
+   * integer rasters is indistinguishable from a legitimate value.
+   */
+  const getTileCoverage = async (
+    {z, x, y}: TileIndex,
+    {tileSize = 256}: {tileSize?: number} = {},
+  ): Promise<TileCoverage> => {
+    const {images} = await getMetadata();
+    const imageIndex = selectImageIndex(images, z, false);
+
+    if (imageIndex === null) return {left: 0, top: 0, right: 0, bottom: 0};
+
+    const tiff = await getGeoTiff(url);
+    const firstImage = await tiff.getImage(0);
+    const selectedImage = await tiff.getImage(imageIndex);
+
+    const window = tileIndexToPixelWindow(
+      {x, y, z},
+      firstImage.getBoundingBox(),
+      selectedImage.getWidth(),
+      selectedImage.getHeight(),
+    );
+
+    return pixelWindowToTileCoverage(window, selectedImage.getWidth(), selectedImage.getHeight(), tileSize);
+  };
+
   function getRawTile(tileIndex: TileIndex, options?: {mask?: false; tileSize?: number}): Promise<TypedArray>;
   function getRawTile(tileIndex: TileIndex, options: {mask: true; tileSize?: number}): Promise<TypedArray | null>;
   async function getRawTile(
@@ -117,23 +196,13 @@ const CogReader = (url: string) => {
     // Int and Uint arrays will be filled with zeroes.
     const fillValue = mask ? 0 : noData === undefined || Number.isNaN(noData) ? Infinity : noData;
 
-    // Filter data or mask images
-    const filteredImages = images
-      .map((img, index) => ({...img, index}))
-      .filter((img) => (mask ? img.isMask : !img.isMask));
+    const imageIndex = selectImageIndex(images, z, mask);
 
-    if (filteredImages.length === 0) return null; // only reachable when mask=true and COG has no mask band
-
-    // Pick the closest image to z.
-    const aboveZoomImages = filteredImages.filter((img) => Math.round(img.zoom) >= z);
-    const bestImage =
-      aboveZoomImages.length > 0
-        ? aboveZoomImages.reduce((a, b) => (a.zoom < b.zoom ? a : b)) // Closest above z
-        : filteredImages.reduce((a, b) => (a.zoom > b.zoom ? a : b)); // Closest below z (fallback)
+    if (imageIndex === null) return null; // only reachable when mask=true and COG has no mask band
 
     const tiff = await getGeoTiff(url);
     const firstImage = await tiff.getImage(0);
-    const selectedImage = await tiff.getImage(bestImage.index);
+    const selectedImage = await tiff.getImage(imageIndex);
 
     const window = tileIndexToPixelWindow(
       {x, y, z},
@@ -156,7 +225,7 @@ const CogReader = (url: string) => {
     return tile;
   }
 
-  return {getTilejson, getMetadata, getRawTile};
+  return {getTilejson, getMetadata, getRawTile, getTileCoverage};
 };
 
 export const getCogMetadata = (url: string) => CogReader(url).getMetadata();

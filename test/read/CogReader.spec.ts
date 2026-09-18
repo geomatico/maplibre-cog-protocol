@@ -208,6 +208,110 @@ describe('CogReader', () => {
     }));
   });
 
+  test('getMetadata reads the noData value from the GDAL_NODATA tag, infinities included', async () => {
+    const withNoDataTag = (tagValue: string) => ({
+      ...fakeGeoTIFF,
+      // @ts-expect-error partial mock
+      getImage: (index?: number) => Promise.resolve(index === 1 ? fakeOverview : {
+        ...fakeFirstImage,
+        fileDirectory: {
+          loadValue: vi.fn(async (tag: string | number) => {
+            if (tag === 'GDAL_NODATA') return tagValue;
+            if (tag === 'PhotometricInterpretation') return PhotometricInterpretations.RGB;
+            if (tag === 'NewSubfileType') return 0;
+            return undefined;
+          }),
+        },
+      }),
+    });
+
+    mockedFromUrl.mockReturnValueOnce(Promise.resolve(withNoDataTag('-inf\u0000')));
+    expect((await CogReader('minus-inf.tif').getMetadata()).noData).toBe(-Infinity);
+
+    mockedFromUrl.mockReturnValueOnce(Promise.resolve(withNoDataTag('nan\u0000')));
+    expect((await CogReader('nan-tag.tif').getMetadata()).noData).toBeNaN();
+
+    mockedFromUrl.mockReturnValueOnce(Promise.resolve(withNoDataTag('-9999\u0000')));
+    expect((await CogReader('minus-9999.tif').getMetadata()).noData).toBe(-9999);
+  });
+
+  test('getMetadata locates the alpha sample declared in ExtraSamples', async () => {
+    const withTags = (tags: Record<string, unknown>) => ({
+      ...fakeGeoTIFF,
+      // @ts-expect-error partial mock
+      getImage: (index?: number) => Promise.resolve(index === 1 ? fakeOverview : {
+        ...fakeFirstImage,
+        fileDirectory: {
+          loadValue: vi.fn(async (tag: string | number) => {
+            if (tag === 'PhotometricInterpretation') return PhotometricInterpretations.RGB;
+            if (tag === 'NewSubfileType') return 0;
+            return tags[tag as string];
+          }),
+        },
+      }),
+    });
+
+    // RGBA, unassociated alpha: 4 samples, 1 extra, so the alpha sample is the fourth
+    mockedFromUrl.mockReturnValueOnce(Promise.resolve(
+      withTags({ExtraSamples: new Uint16Array([2]), SamplesPerPixel: 4, BitsPerSample: new Uint16Array([8, 8, 8, 8])})
+    ));
+    let metadata = await CogReader('rgba.tif').getMetadata();
+    expect(metadata.alphaBand).toBe(3);
+    expect(metadata.premultipliedAlpha).toBe(false);
+
+    // Associated (premultiplied) alpha
+    mockedFromUrl.mockReturnValueOnce(Promise.resolve(
+      withTags({ExtraSamples: new Uint16Array([1]), SamplesPerPixel: 4, BitsPerSample: new Uint16Array([8, 8, 8, 8])})
+    ));
+    metadata = await CogReader('premultiplied.tif').getMetadata();
+    expect(metadata.alphaBand).toBe(3);
+    expect(metadata.premultipliedAlpha).toBe(true);
+
+    // An extra sample that is not alpha, and an extra sample that is, after it
+    mockedFromUrl.mockReturnValueOnce(Promise.resolve(
+      withTags({ExtraSamples: new Uint16Array([0, 2]), SamplesPerPixel: 5})
+    ));
+    metadata = await CogReader('extra-then-alpha.tif').getMetadata();
+    expect(metadata.alphaBand).toBe(4);
+
+    // Extra samples that are not alpha at all
+    mockedFromUrl.mockReturnValueOnce(Promise.resolve(
+      withTags({ExtraSamples: new Uint16Array([0]), SamplesPerPixel: 4})
+    ));
+    metadata = await CogReader('extra-only.tif').getMetadata();
+    expect(metadata.alphaBand).toBeUndefined();
+
+    // No ExtraSamples tag at all
+    mockedFromUrl.mockReturnValueOnce(Promise.resolve(withTags({SamplesPerPixel: 3})));
+    metadata = await CogReader('no-extra.tif').getMetadata();
+    expect(metadata.alphaBand).toBeUndefined();
+    expect(metadata.premultipliedAlpha).toBeUndefined();
+  });
+
+  test('getTileCoverage covers the whole tile when it falls inside the image', async () => {
+    const coverage = await CogReader('file.tif').getTileCoverage({z: 15, x: 16550, y: 12213});
+
+    expect(coverage).toEqual({left: 0, top: 0, right: 256, bottom: 256});
+  });
+
+  test('getTileCoverage leaves out the tile pixels beyond the image border', async () => {
+    const reader = CogReader('file.tif');
+
+    // Tile holding the NW corner of the image: only its right and bottom parts have data.
+    expect(await reader.getTileCoverage({z: 15, x: 16548, y: 12212}))
+      .toEqual({left: 224, top: 64, right: 256, bottom: 256});
+
+    // Tile holding the SE corner: the rightmost columns are past the image.
+    expect(await reader.getTileCoverage({z: 15, x: 16552, y: 12214}))
+      .toEqual({left: 0, top: 0, right: 224, bottom: 256});
+  });
+
+  test('getTileCoverage is empty for a tile fully outside the image', async () => {
+    const coverage = await CogReader('file.tif').getTileCoverage({z: 15, x: 16540, y: 12200});
+
+    expect(coverage).toEqual({left: 0, top: 0, right: 0, bottom: 0});
+  });
+
   test('getRawTile returns the cached tile on subsequent calls, skipping readRasters', async () => {
     const readRasters = vi.fn(() => Promise.resolve(fakeReadRasterResult));
     mockedFromUrl.mockReturnValueOnce(Promise.resolve({

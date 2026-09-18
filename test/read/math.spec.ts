@@ -3,6 +3,7 @@ import {test, expect} from 'vitest';
 import {
   tileIndexToMercatorBbox,
   tileIndexToPixelWindow,
+  pixelWindowToTileCoverage,
   mercatorBboxToGeographicBbox,
   zoomFromResolution,
   tilePixelFromLatLonZoom
@@ -79,6 +80,49 @@ describe('math', () => {
     const fullWorld = [-WORLD_EXTENT, -WORLD_EXTENT, WORLD_EXTENT, WORLD_EXTENT];
     // tile (1,0,1) covers the NE quadrant: pixel columns 128–256, rows 0–128
     expect(tileIndexToPixelWindow({x: 1, y: 0, z: 1}, fullWorld, 256, 256)).toEqual([128, 0, 256, 128]);
+  });
+
+  test('pixelWindowToTileCoverage covers the whole tile when the window is inside the image', () => {
+    expect(pixelWindowToTileCoverage([0, 0, 256, 256], 256, 256, 256))
+      .toEqual({left: 0, top: 0, right: 256, bottom: 256});
+
+    // A window well inside a bigger image, resampled 4:1
+    expect(pixelWindowToTileCoverage([512, 512, 1536, 1536], 2048, 2048, 256))
+      .toEqual({left: 0, top: 0, right: 256, bottom: 256});
+  });
+
+  test('pixelWindowToTileCoverage leaves out the part of the window beyond the image', () => {
+    // 1:1 window shifted 64 pixels up and to the left of the image origin
+    expect(pixelWindowToTileCoverage([-64, -64, 192, 192], 1000, 1000, 256))
+      .toEqual({left: 64, top: 64, right: 256, bottom: 256});
+
+    // 1:1 window whose last 56 columns and rows fall past a 200x200 image
+    expect(pixelWindowToTileCoverage([0, 0, 256, 256], 200, 200, 256))
+      .toEqual({left: 0, top: 0, right: 200, bottom: 200});
+
+    // Window entirely to the left of the image: no column is covered, so the rectangle is empty
+    expect(pixelWindowToTileCoverage([-512, 0, 0, 512], 1000, 1000, 256))
+      .toEqual({left: 0, top: 0, right: 0, bottom: 256});
+
+    // Downsampled 2:1: every tile pixel takes 2 image pixels, so the border lands at half the index
+    expect(pixelWindowToTileCoverage([-256, -256, 256, 256], 1000, 1000, 256))
+      .toEqual({left: 128, top: 128, right: 256, bottom: 256});
+  });
+
+  test('pixelWindowToTileCoverage returns an empty rectangle when the window misses the image', () => {
+    expect(pixelWindowToTileCoverage([-500, -500, -100, -100], 1000, 1000, 256))
+      .toEqual({left: 0, top: 0, right: 0, bottom: 0});
+    expect(pixelWindowToTileCoverage([1100, 1100, 1400, 1400], 1000, 1000, 256))
+      .toEqual({left: 0, top: 0, right: 0, bottom: 0});
+  });
+
+  test('pixelWindowToTileCoverage accounts for the clamping of the last sampled pixel', () => {
+    // Upsampling (a 36 px window blown up to 256): geotiff.js clamps the tail of the tile to the
+    // last window pixel, so those tile pixels are covered iff that one is.
+    expect(pixelWindowToTileCoverage([872, 872, 908, 908], 908, 908, 256))
+      .toEqual({left: 0, top: 0, right: 256, bottom: 256}); // last window pixel (907) is the last image pixel
+    expect(pixelWindowToTileCoverage([-65, -65, 0, 0], 576, 576, 256))
+      .toEqual({left: 0, top: 0, right: 0, bottom: 0}); // last window pixel (-1) is still outside
   });
 
 });

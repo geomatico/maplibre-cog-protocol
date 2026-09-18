@@ -46,20 +46,57 @@ describe('renderPhoto', () => {
     ).toEqual([100, 150, 200, 255]);
   });
 
-  test('Palette: index 0 maps through the colorMap', () => {
+  test('Palette: index 0 maps through the colorMap, and is a color like any other', () => {
     // entry 0 → (0, 100, 200) using 16-bit values divisible by 256
-    // noData=99 so that palette index 0 is not treated as transparent
     const colorMap = [0, 0, 25600, 0, 51200, 0];
     expect(
       px0(
         renderPhoto(makeData(1, [0]), {
           ...baseMetadata,
-          noData: 99,
           photometricInterpretation: PhotometricInterpretations.Palette,
           colorMap,
         }),
       ),
     ).toEqual([0, 100, 200, 255]);
+  });
+
+  test('RGB: black stays opaque when the COG declares no noData value', () => {
+    expect(
+      px0(
+        renderPhoto(makeData(3, [0, 0, 0]), {
+          ...baseMetadata,
+          photometricInterpretation: PhotometricInterpretations.RGB,
+        }),
+      ),
+    ).toEqual([0, 0, 0, 255]);
+  });
+
+  test('RGB: black is transparent when the COG declares noData 0', () => {
+    expect(
+      px0(
+        renderPhoto(makeData(3, [0, 0, 0]), {
+          ...baseMetadata,
+          noData: 0,
+          photometricInterpretation: PhotometricInterpretations.RGB,
+        }),
+      ),
+    ).toEqual([0, 0, 0, 0]);
+  });
+
+  test('YCbCr: black padding is transparent, and raw zeros are not', () => {
+    const black = renderPhoto(makeData(3, [0, 128, 128]), {
+      ...baseMetadata,
+      noData: 0,
+      photometricInterpretation: PhotometricInterpretations.YCbCr,
+    });
+    const rawZeros = renderPhoto(makeData(3, [0, 0, 0]), {
+      ...baseMetadata,
+      noData: 0,
+      photometricInterpretation: PhotometricInterpretations.YCbCr,
+    });
+
+    expect(px0(black)).toEqual([0, 0, 0, 0]);
+    expect(px0(rawZeros)[3]).toBe(255);
   });
 
   test('Palette: throws when colorMap is absent', () => {

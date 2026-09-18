@@ -174,11 +174,29 @@ color map), `CMYK`, `YCbCr` and `CIELab`. Any other value throws an error.
   });
 ```
 
-Transparency comes from the COG's `noData` value: pixels whose color bands all equal `noData` are
-rendered fully transparent. A separate alpha band is not read, so generate your COGs with
-`-co ADD_ALPHA=NO`, as in the [GDAL commands below](#cog-generation-tips). Beware that a COG
-declaring no `noData` value at all falls back to treating 0 as transparent, which also makes
-genuinely black pixels disappear; set an explicit `noData` to avoid this.
+Transparency comes from the COG's internal mask band, its `noData` value or its alpha sample, in
+the same order of precedence GDAL applies:
+
+1. If the COG carries an [internal mask band](#transparency-from-the-cogs-internal-mask-band), that
+   mask alone decides which pixels are valid, and `noData` is not used for transparency. This is
+   the most reliable option, and the only dependable one under lossy compression, where JPEG
+   artifacts keep padding pixels from matching `noData` exactly.
+2. Otherwise, pixels whose color bands **all** equal `noData` are rendered fully transparent. In a
+   JPEG COG stored as YCbCr, `noData` is matched against the decoded RGB values, which is what GDAL
+   exposes and what a `noData` of 0 means: black.
+3. Otherwise, if the COG has an **alpha sample** (an extra band declared as alpha in the TIFF
+   `ExtraSamples` tag, which is what `gdalwarp -dstalpha` or `-co ADD_ALPHA=YES` writes), it is
+   applied as transparency, including partial transparency. Premultiplied (associated) alpha has
+   its colors restored.
+4. **A COG with none of the three has no transparent pixels**, again as in GDAL. If your imagery
+   has a black collar, declare a `noData` value or keep the alpha band when generating the COG, as
+   in the [GDAL commands below](#cog-generation-tips).
+
+Tile pixels falling outside the COG's own extent are always transparent, whatever the COG declares.
+
+With JPEG compression GDAL converts an alpha band into a mask band, so rule 1 covers those files.
+Note that an alpha band costs a full extra band of storage, where a mask band costs about a bit per
+pixel.
 
 If instead you need transparency driven by a vector geometry, see
 [Mask COG rendering with a GeoJSON polygon](#mask-cog-rendering-with-a-geojson-polygon).
@@ -230,7 +248,8 @@ MapLibre expects.
 
 COGs with a single band can be also converted to images applying a color ramp. Values are read from
 the first band with `scale` and `offset` applied; `noData`, `NaN` and `Infinity` pixels are rendered
-transparent.
+transparent. As in GDAL, `noData` is matched against the raw value stored in the file, before
+`scale` and `offset` are applied.
 
 * Use a `raster` source with the url prepended with `cog://` and appended with `#color:` and the color ramp specification.
 * Use a `raster` layer.
@@ -420,7 +439,11 @@ No API needed: if the COG contains an internal mask band (a TIFF image whose `Ne
 the mask bit set), it is read alongside the data and pixels masked out in the file are rendered
 fully transparent. This applies to every rendering mode, custom color functions included.
 
-GDAL carries such a band over when the source dataset already has one.
+GDAL carries such a band over when the source dataset already has one, and writes one in place of
+an alpha band when compressing with JPEG.
+
+An alpha sample declared in `ExtraSamples` is read the same way, and it can express partial
+transparency, not only on/off.
 
 
 ### Mask COG rendering with a GeoJSON polygon
@@ -465,6 +488,8 @@ Use the `getCogMetadata(url)` to obtain metadata about a COG file. It returns a 
 * `bbox`: `[west, south, east, north]` bounds, in geographic coordinates.
 * `artist`: the TIFF `Artist` tag, if present.
 * `photometricInterpretation`, `bitsPerSample`, `colorMap`: raw TIFF tags used for rendering.
+* `alphaBand`: index of the sample holding alpha, if the COG declares one, and
+  `premultipliedAlpha`: whether it is associated (premultiplied) alpha.
 * `images`: one entry per image in the file (full resolution, overviews and masks), each with its
   `zoom` level and the `isOverview` / `isMask` flags.
 
@@ -482,7 +507,11 @@ See the [metadata example](examples/metadata.html) for an interactive version.
 
 ### Get pixel values for a given location
 
-The `locationValues(url, location, zoom?)` method reads pixel values for a given location, with the COG's `scale` and `offset` applied. It returns an array of numbers, one for each band in the COG. NaNs are returned when querying outside of the image, or for `noData` pixels. If zoom is indicated, it will query the nearest overview corresponding to that zoom level; otherwise the full resolution image is used.
+The `locationValues(url, location, zoom?)` method reads pixel values for a given location, with the COG's `scale` and `offset` applied. It returns an array of numbers, one for each band in the COG. If zoom is indicated, it will query the nearest overview corresponding to that zoom level; otherwise the full resolution image is used.
+
+Every band comes back as `NaN` wherever nothing would be drawn: outside the image, on `noData`
+pixels, where the COG's mask band or alpha sample marks the pixel as transparent, and outside the
+[GeoJSON mask](#mask-cog-rendering-with-a-geojson-polygon) when one is set.
 
 Example usage in conjunction with maplibre API to get COG values on mouse hover:
 
@@ -548,15 +577,55 @@ Sample GDAL commands (using docker for convenience, but not needed):
 
 #### RGB Image (lossy compression)
 
+Let GDAL add the alpha band: with JPEG it is written as a lossless 1-bit mask band, which this
+library reads, and which marks the padding around a rotated or clipped image exactly. Do not pass
+`-dstnodata`: JPEG artifacts would leave a dark fringe of pixels that no longer match it.
+
 ```bash
-docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdalwarp /srv/<source>.tif /srv/<target>.tif -of COG -co BLOCKSIZE=256 -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=JPEG -co OVERVIEWS=IGNORE_EXISTING -co ADD_ALPHA=NO -dstnodata NaN
+docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdalwarp /srv/<source>.tif /srv/<target>.tif -of COG -co BLOCKSIZE=256 -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=JPEG -co OVERVIEWS=IGNORE_EXISTING
+```
+
+#### RGB Image (lossless compression)
+
+Here GDAL keeps the alpha band it adds as a fourth sample, which is read as transparency, so the
+default is what you want:
+
+```bash
+docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdalwarp /srv/<source>.tif /srv/<target>.tif -of COG -co BLOCKSIZE=256 -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=DEFLATE -co OVERVIEWS=IGNORE_EXISTING
+```
+
+To save that fourth band, drop it with `-co ADD_ALPHA=NO` and use a `noData` value instead.
+Remember that this costs you that color: with `noData` 0, genuinely black pixels become transparent
+too. Mind where the value is declared: when `TILING_SCHEME` makes the COG driver reproject,
+`gdalwarp` does not carry `-dstnodata` into the output file, so declare it on the **source**:
+
+```bash
+docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdal_edit.py -a_nodata 0 /srv/<source>.tif
+docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdalwarp /srv/<source>.tif /srv/<target>.tif -of COG -co BLOCKSIZE=256 -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=DEFLATE -co OVERVIEWS=IGNORE_EXISTING -co ADD_ALPHA=NO
 ```
 
 #### Digital Elevation Model
 
+`NaN` is the ideal `noData` value for float data, as it cannot collide with a real measurement. It
+only works for `Float32`/`Float64` rasters though: on an integer one, GDAL rounds it to 0 and warns.
+Integer data needs a value outside its real range instead, such as `-a_nodata -32768`.
+
+As above, the value goes on the source, not in the warp:
+
 ```bash
-docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdalwarp /srv/<source>.tif /srv/<target>.tiff -of COG -co BLOCKSIZE=256 -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=DEFLATE -co RESAMPLING=BILINEAR -co OVERVIEW_RESAMPLING=NEAREST -co OVERVIEWS=IGNORE_EXISTING -co ADD_ALPHA=NO -dstnodata NaN
+docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdal_edit.py -a_nodata nan /srv/<source>.tif
+docker run --rm -v .:/srv ghcr.io/osgeo/gdal:alpine-small-3.9.1 gdalwarp /srv/<source>.tif /srv/<target>.tiff -of COG -co BLOCKSIZE=256 -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=DEFLATE -co RESAMPLING=BILINEAR -co OVERVIEW_RESAMPLING=NEAREST -co OVERVIEWS=IGNORE_EXISTING -co ADD_ALPHA=NO
 ```
+
+#### Checking what a COG declares
+
+```bash
+gdalinfo <target>.tif | grep -E 'NoData|Mask Flags'
+```
+
+A COG with no `NoData Value`, no `Mask Flags: PER_DATASET` and no `ColorInterp=Alpha` band has no
+transparency at all: every pixel it contains is rendered opaque.
+
 
 ## For developers
 
