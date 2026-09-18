@@ -41,6 +41,14 @@ describe('renderTerrain', () => {
     expect(px0(renderTerrain(makeFloat(NaN), {...baseOptions, noData: NaN}))).toEqual([1, 134, 160, 255]);
   });
 
+  test('noData is compared against the raw value, before scale and offset', () => {
+    // Raw 99 with scale 0.5 and offset 3 reads as 52.5 m, but the pixel is noData all the same.
+    const data = new Float32Array(PIXELS);
+    data[0] = 99;
+    expect(px0(renderTerrain(data, {offset: 3, scale: 0.5, images: [], noData: 99})))
+      .toEqual([1, 134, 160, 255]); // sea level
+  });
+
   test('Infinity pixel (out-of-extent fill value) is encoded as elevation 0 (sea level)', () => {
     expect(px0(renderTerrain(makeFloat(Infinity), baseOptions))).toEqual([1, 134, 160, 255]);
   });

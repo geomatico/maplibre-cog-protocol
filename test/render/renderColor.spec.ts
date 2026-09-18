@@ -26,6 +26,21 @@ describe('renderColor', () => {
     expect(renderColor(data, {...baseOptions, noData: 99})[3]).toBe(0);
   });
 
+  test('noData is compared against the raw value, before scale and offset', () => {
+    // A COG storing 99 as noData, with values scaled by 2 and offset by 10: 99 reads as 208, and
+    // the pixel is still noData. Comparing the scaled value would miss it.
+    const data = new Uint8Array(PIXELS);
+    data[0] = 99;
+    expect(renderColor(data, {...baseOptions, offset: 10, scale: 2, noData: 99})[3]).toBe(0);
+  });
+
+  test('a scaled value that happens to equal noData is not transparent', () => {
+    // Raw 44 with scale 2 and offset 10 gives 98, which is not the noData value 44 applies to.
+    const data = new Uint8Array(PIXELS);
+    data[0] = 49;
+    expect(renderColor(data, {...baseOptions, offset: 10, scale: 2, noData: 108})[3]).toBe(255);
+  });
+
   test('NaN pixel is transparent', () => {
     const data = new Float32Array(PIXELS);
     data[0] = Number.NaN;

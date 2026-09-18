@@ -36,6 +36,7 @@ mockedCogReader.mockReturnValue({
   getTilejson: () => Promise.resolve(fakeTileJSON),
   getMetadata: () => Promise.resolve(fakeMetadata),
   getRawTile: (_: unknown, options?: {mask?: boolean}) => Promise.resolve(options?.mask ? null : fakeRawTile),
+  getTileCoverage: () => Promise.resolve({left: 0, top: 0, right: 256, bottom: 256}),
 });
 
 vi.mock('@/render/custom/rendererStore');
@@ -215,6 +216,7 @@ describe('cogProtocol', () => {
       getTilejson: () => Promise.resolve(fakeTileJSON),
       getMetadata: () => Promise.resolve(fakeMetadata),
       getRawTile: (_: unknown, options?: {mask?: boolean}) => Promise.resolve(options?.mask ? mask : fakeRawTile),
+      getTileCoverage: () => Promise.resolve({left: 0, top: 0, right: 256, bottom: 256}),
     });
 
     await cogProtocol({type: 'image', url: 'cog://file.tif/1/2/3'});
@@ -223,6 +225,134 @@ describe('cogProtocol', () => {
     expect(rgba[100 * 4 + 3]).toBe(0);  // masked pixel → transparent
     expect(rgba[0 * 4 + 3]).toBe(255);  // unmasked pixel → still opaque
     expect(rgba[200 * 4 + 3]).toBe(255); // unmasked pixel → still opaque
+  });
+
+  test('the COG mask band takes precedence over its noData value', async () => {
+    const mask = new Uint8Array(256 * 256).fill(255);
+
+    mockedCogReader.mockReturnValueOnce({
+      getTilejson: () => Promise.resolve(fakeTileJSON),
+      getMetadata: () => Promise.resolve({...fakeMetadata, noData: 0}),
+      getRawTile: (_: unknown, options?: {mask?: boolean}) => Promise.resolve(options?.mask ? mask : fakeRawTile),
+      getTileCoverage: () => Promise.resolve({left: 0, top: 0, right: 256, bottom: 256}),
+    });
+
+    await cogProtocol({type: 'image', url: 'cog://file.tif/1/2/3'});
+
+    // GDAL ignores noData when the file states validity in a mask band (RFC 15)
+    expect(mockedRenderPhoto).toHaveBeenCalledWith(fakeRawTile, expect.objectContaining({noData: undefined}));
+  });
+
+  test('the noData value reaches the renderer when the COG has no mask band', async () => {
+    mockedCogReader.mockReturnValueOnce({
+      getTilejson: () => Promise.resolve(fakeTileJSON),
+      getMetadata: () => Promise.resolve({...fakeMetadata, noData: 0}),
+      getRawTile: (_: unknown, options?: {mask?: boolean}) => Promise.resolve(options?.mask ? null : fakeRawTile),
+      getTileCoverage: () => Promise.resolve({left: 0, top: 0, right: 256, bottom: 256}),
+    });
+
+    await cogProtocol({type: 'image', url: 'cog://file.tif/1/2/3'});
+
+    expect(mockedRenderPhoto).toHaveBeenCalledWith(fakeRawTile, expect.objectContaining({noData: 0}));
+  });
+
+  test('the alpha sample of the COG is applied to the rendered tile', async () => {
+    const rgba = new Uint8ClampedArray(4 * 256 * 256).fill(255);
+    mockedRenderPhoto.mockReturnValueOnce(rgba);
+
+    const rawTile = new Uint8Array(256 * 256 * 4).fill(255);
+    rawTile[3] = 0;     // first pixel: fully transparent
+    rawTile[7] = 128;   // second pixel: half transparent
+
+    mockedCogReader.mockReturnValueOnce({
+      getTilejson: () => Promise.resolve(fakeTileJSON),
+      getMetadata: () => Promise.resolve({...fakeMetadata, alphaBand: 3, bitsPerSample: [8, 8, 8, 8]}),
+      getRawTile: (_: unknown, options?: {mask?: boolean}) => Promise.resolve(options?.mask ? null : rawTile),
+      getTileCoverage: () => Promise.resolve({left: 0, top: 0, right: 256, bottom: 256}),
+    });
+
+    await cogProtocol({type: 'image', url: 'cog://file.tif/1/2/3'});
+
+    expect(rgba[3]).toBe(0);
+    expect(rgba[7]).toBe(128);
+    expect(rgba[11]).toBe(255);
+  });
+
+  test('the alpha sample is ignored when the COG declares a noData value, as in GDAL', async () => {
+    const rgba = new Uint8ClampedArray(4 * 256 * 256).fill(255);
+    mockedRenderPhoto.mockReturnValueOnce(rgba);
+
+    const rawTile = new Uint8Array(256 * 256 * 4).fill(255);
+    rawTile[3] = 0;
+
+    mockedCogReader.mockReturnValueOnce({
+      getTilejson: () => Promise.resolve(fakeTileJSON),
+      getMetadata: () => Promise.resolve({...fakeMetadata, noData: 0, alphaBand: 3, bitsPerSample: [8, 8, 8, 8]}),
+      getRawTile: (_: unknown, options?: {mask?: boolean}) => Promise.resolve(options?.mask ? null : rawTile),
+      getTileCoverage: () => Promise.resolve({left: 0, top: 0, right: 256, bottom: 256}),
+    });
+
+    await cogProtocol({type: 'image', url: 'cog://file.tif/1/2/3'});
+
+    expect(rgba[3]).toBe(255); // renderPhoto decides, through noData
+  });
+
+  test('the alpha sample is not applied to terrain tiles', async () => {
+    const rgba = new Uint8ClampedArray(4 * 256 * 256).fill(255);
+    mockedRenderTerrain.mockReturnValueOnce(rgba);
+
+    const rawTile = new Uint8Array(256 * 256 * 2).fill(255);
+    rawTile[1] = 0;
+
+    mockedCogReader.mockReturnValueOnce({
+      getTilejson: () => Promise.resolve(fakeTileJSON),
+      getMetadata: () => Promise.resolve({...fakeMetadata, alphaBand: 1, bitsPerSample: [8, 8]}),
+      getRawTile: (_: unknown, options?: {mask?: boolean}) => Promise.resolve(options?.mask ? null : rawTile),
+      getTileCoverage: () => Promise.resolve({left: 0, top: 0, right: 256, bottom: 256}),
+    });
+
+    await cogProtocol({type: 'image', url: 'cog://file.tif#dem/1/2/3'});
+
+    expect(rgba[3]).toBe(255);
+  });
+
+  test('pixels outside the COG coverage are transparent', async () => {
+    const rgba = new Uint8ClampedArray(4 * 256 * 256).fill(255); // all pixels fully opaque
+    mockedRenderPhoto.mockReturnValueOnce(rgba);
+
+    mockedCogReader.mockReturnValueOnce({
+      getTilejson: () => Promise.resolve(fakeTileJSON),
+      getMetadata: () => Promise.resolve(fakeMetadata),
+      getRawTile: (_: unknown, options?: {mask?: boolean}) => Promise.resolve(options?.mask ? null : fakeRawTile),
+      // The COG only covers the bottom-right quarter of the tile.
+      getTileCoverage: () => Promise.resolve({left: 128, top: 128, right: 256, bottom: 256}),
+    });
+
+    await cogProtocol({type: 'image', url: 'cog://file.tif/1/2/3'});
+
+    const alpha = (column: number, row: number) => rgba[(row * 256 + column) * 4 + 3];
+    expect(alpha(0, 0)).toBe(0);       // outside, above and to the left
+    expect(alpha(200, 100)).toBe(0);   // outside, above
+    expect(alpha(100, 200)).toBe(0);   // outside, to the left
+    expect(alpha(128, 128)).toBe(255); // first covered pixel
+    expect(alpha(255, 255)).toBe(255); // last covered pixel
+  });
+
+  test('coverage is not applied to terrain tiles, whose alpha channel is not transparency', async () => {
+    const rgba = new Uint8ClampedArray(4 * 256 * 256).fill(255);
+    mockedRenderTerrain.mockReturnValueOnce(rgba);
+
+    mockedCogReader.mockReturnValueOnce({
+      getTilejson: () => Promise.resolve(fakeTileJSON),
+      getMetadata: () => Promise.resolve(fakeMetadata),
+      getRawTile: (_: unknown, options?: {mask?: boolean}) => Promise.resolve(options?.mask ? null : fakeRawTile),
+      getTileCoverage: () => Promise.resolve({left: 128, top: 128, right: 256, bottom: 256}),
+    });
+
+    await cogProtocol({type: 'image', url: 'cog://file.tif#dem/1/2/3'});
+
+    expect(mockedRenderTerrain).toHaveBeenCalled();
+    expect(rgba[3]).toBe(255); // uncovered pixel, still opaque: renderTerrain encodes it as 0 m
   });
 
 });

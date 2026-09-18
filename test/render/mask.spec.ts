@@ -77,7 +77,7 @@ beforeAll(() => {
 
 // --- Tests -----------------------------------------------------------------------
 
-import {applyMask, clearMask, setMask, toTilePixel} from '../../src/render/mask';
+import {applyMask, clearMask, isMaskedOut, setMask, toTilePixel} from '../../src/render/mask';
 
 // z=0: single 256×256 tile covering the whole world.
 // Equator (lat=0) → row 128 exactly. Prime meridian (lng=0) → col 128 exactly.
@@ -100,6 +100,86 @@ describe('toTilePixel', () => {
     const [col, row] = toTilePixel([-180, 85.05], WORLD_TILE);
     expect(col).toBeCloseTo(0, 0);
     expect(row).toBeCloseTo(0, 0);
+  });
+});
+
+describe('isMaskedOut', () => {
+  const northernHemisphere: FeatureCollection<Polygon> = {
+    type: 'FeatureCollection',
+    features: [{
+      type: 'Feature',
+      geometry: {
+        type: 'Polygon',
+        coordinates: [[[-180, 0], [180, 0], [180, 85.05], [-180, 85.05], [-180, 0]]]
+      },
+      properties: {}
+    }]
+  };
+
+  test('nothing is masked out when no mask is set', () => {
+    expect(isMaskedOut([0, 45], WORLD_TILE)).toBe(false);
+    expect(isMaskedOut([0, -45], WORLD_TILE)).toBe(false);
+  });
+
+  test('positions inside the mask are kept, positions outside are masked out', () => {
+    setMask(northernHemisphere);
+
+    expect(isMaskedOut([0, 45], WORLD_TILE)).toBe(false);  // northern hemisphere: drawn
+    expect(isMaskedOut([0, -45], WORLD_TILE)).toBe(true);  // southern hemisphere: not drawn
+  });
+
+  test('agrees with what applyMask paints', () => {
+    setMask(northernHemisphere);
+
+    const rgba = solidTile();
+    applyMask(rgba, WORLD_TILE);
+
+    for (const [longitude, latitude] of [[0, 45], [0, -45], [-90, 20], [120, -70]]) {
+      const [col, row] = toTilePixel([longitude, latitude], WORLD_TILE);
+      const isTransparent = alpha(rgba, Math.floor(row), Math.floor(col)) === 0;
+      expect(isMaskedOut([longitude, latitude], WORLD_TILE)).toBe(isTransparent);
+    }
+  });
+
+  test('a hole in the polygon is masked out, as the even-odd fill rule paints it', () => {
+    setMask({
+      type: 'FeatureCollection',
+      features: [{
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [[-90, -60], [90, -60], [90, 60], [-90, 60], [-90, -60]],   // outer ring
+            [[-45, -30], [45, -30], [45, 30], [-45, 30], [-45, -30]]    // hole
+          ]
+        }
+      }]
+    } as FeatureCollection<Polygon>);
+
+    expect(isMaskedOut([70, 45], WORLD_TILE)).toBe(false); // between the rings
+    expect(isMaskedOut([0, 0], WORLD_TILE)).toBe(true);    // inside the hole
+  });
+
+  test('covers MultiPolygon geometries', () => {
+    setMask({
+      type: 'FeatureCollection',
+      features: [{
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: 'MultiPolygon',
+          coordinates: [
+            [[[-180, 0], [-90, 0], [-90, 60], [-180, 60], [-180, 0]]],
+            [[[90, 0], [180, 0], [180, 60], [90, 60], [90, 0]]]
+          ]
+        }
+      }]
+    } as FeatureCollection<MultiPolygon>);
+
+    expect(isMaskedOut([-120, 30], WORLD_TILE)).toBe(false);
+    expect(isMaskedOut([120, 30], WORLD_TILE)).toBe(false);
+    expect(isMaskedOut([0, 30], WORLD_TILE)).toBe(true); // between both polygons
   });
 });
 
