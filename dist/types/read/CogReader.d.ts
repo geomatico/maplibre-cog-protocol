@@ -1,4 +1,4 @@
-import type { CogMetadata, TileIndex, TileJSON, TypedArray } from '../types';
+import type { CogMetadata, TileCoverage, TileIndex, TileJSON, TypedArray } from '../types';
 declare const CogReader: (url: string) => {
     getTilejson: (fullUrl: string) => Promise<TileJSON>;
     getMetadata: () => Promise<CogMetadata>;
@@ -12,6 +12,9 @@ declare const CogReader: (url: string) => {
             tileSize?: number;
         }): Promise<TypedArray | null>;
     };
+    getTileCoverage: ({ z, x, y }: TileIndex, { tileSize }?: {
+        tileSize?: number;
+    }) => Promise<TileCoverage>;
 };
 export declare const getCogMetadata: (url: string) => Promise<CogMetadata>;
 export declare const setRequestHeaders: (headers: Record<string, string>) => void;

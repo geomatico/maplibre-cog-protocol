@@ -1,5 +1,7 @@
 import { TILE_SIZE } from './constants';
 import CogReader from './read/CogReader';
+import { applyAlpha } from './render/alpha';
+import { applyCoverage } from './render/coverage';
 import CustomRendererStore from './render/custom/rendererStore';
 import { applyMask } from './render/mask';
 import renderColor from './render/renderColor';
@@ -25,13 +27,20 @@ const renderTile = async (url) => {
     const rawTile = await cog.getRawTile({ z, x, y });
     const rawMask = await cog.getRawTile({ x, y, z }, { mask: true });
     const metadata = await cog.getMetadata();
+    // Transparency has a precedence, the same GDAL applies (RFC 15): a mask band first, then the
+    // noData value, then an alpha sample. A COG carrying a mask band states validity there, and
+    // honouring its noData too would make genuine noData-coloured pixels disappear, typically the
+    // true blacks of a JPEG image whose padding is already masked out.
+    const renderMetadata = rawMask ? { ...metadata, noData: undefined } : metadata;
+    const alphaBand = !rawMask && metadata.noData === undefined ? metadata.alphaBand : undefined;
     let rgba;
     const renderCustom = CustomRendererStore.get(cogUrl);
+    const isTerrain = renderCustom === undefined && hash.startsWith('dem');
     if (renderCustom !== undefined) {
-        rgba = renderCustom(rawTile, metadata);
+        rgba = renderCustom(rawTile, metadata); // a color function gets the COG's own metadata, untouched
     }
-    else if (hash.startsWith('dem')) {
-        rgba = renderTerrain(rawTile, metadata);
+    else if (isTerrain) {
+        rgba = renderTerrain(rawTile, renderMetadata);
     }
     else if (hash.startsWith('color')) {
         const colorParams = hash.split('color').pop()?.substring(1);
@@ -54,13 +63,13 @@ const renderTile = async (url) => {
             }
             const min = parseFloat(minStr), max = parseFloat(maxStr), isReverse = modifiers?.includes('-') || false, isContinuous = modifiers?.includes('c') || false;
             rgba = renderColor(rawTile, {
-                ...metadata,
+                ...renderMetadata,
                 colorScale: { colorScheme, customColors, min, max, isReverse, isContinuous },
             });
         }
     }
     else {
-        rgba = renderPhoto(rawTile, metadata);
+        rgba = renderPhoto(rawTile, renderMetadata);
     }
     if (rawMask) {
         const pixels = TILE_SIZE * TILE_SIZE;
@@ -68,6 +77,18 @@ const renderTile = async (url) => {
             if (rawMask[i] === 0)
                 rgba[i * 4 + 3] = 0;
         }
+    }
+    // Terrain tiles are opaque by definition: MapLibre reads heights from the RGB channels, and a
+    // transparent pixel would lose them. renderTerrain already encodes uncovered pixels as 0 m.
+    if (!isTerrain) {
+        if (alphaBand !== undefined) {
+            applyAlpha(rgba, rawTile, {
+                band: alphaBand,
+                bitsPerSample: metadata.bitsPerSample?.[alphaBand],
+                premultiplied: metadata.premultipliedAlpha,
+            });
+        }
+        applyCoverage(rgba, await cog.getTileCoverage({ z, x, y }));
     }
     applyMask(rgba, { x, y, z });
     return await createImageBitmap(new ImageData(rgba, TILE_SIZE, TILE_SIZE));

@@ -1,3 +1,4 @@
+import { noDataTest } from '../noData';
 import * as rgba from './rgba';
 export var PhotometricInterpretations;
 (function (PhotometricInterpretations) {
@@ -13,34 +14,36 @@ export var PhotometricInterpretations;
 })(PhotometricInterpretations || (PhotometricInterpretations = {}));
 export const renderPhoto = (raster, { noData, photometricInterpretation, bitsPerSample, colorMap }) => {
     const max = bitsPerSample?.[0] ? 2 ** bitsPerSample[0] : NaN;
-    const transparentValue = noData ?? 0; // TODO defaulting to 0 may render some good black pixels transparent.
+    // A COG that declares no noData value has no transparent pixels, as in GDAL. Guessing 0 would
+    // make genuinely black pixels, or the first entry of a color table, silently disappear.
+    const isNoData = noDataTest(noData, raster);
     let data;
     switch (photometricInterpretation) {
         case PhotometricInterpretations.WhiteIsZero:
-            data = rgba.fromWhiteIsZero(raster, max, transparentValue);
+            data = rgba.fromWhiteIsZero(raster, max, isNoData);
             break;
         case PhotometricInterpretations.BlackIsZero:
-            data = rgba.fromBlackIsZero(raster, max, transparentValue);
+            data = rgba.fromBlackIsZero(raster, max, isNoData);
             break;
         case PhotometricInterpretations.RGB:
-            data = rgba.fromRGB(raster, transparentValue);
+            data = rgba.fromRGB(raster, isNoData);
             break;
         case PhotometricInterpretations.Palette:
             if (colorMap) {
-                data = rgba.fromPalette(raster, colorMap, transparentValue);
+                data = rgba.fromPalette(raster, colorMap, isNoData);
             }
             else {
                 throw new Error('colorMap for paletted image not found.');
             }
             break;
         case PhotometricInterpretations.CMYK:
-            data = rgba.fromCMYK(raster, transparentValue);
+            data = rgba.fromCMYK(raster, isNoData);
             break;
         case PhotometricInterpretations.YCbCr:
-            data = rgba.fromYCbCr(raster, transparentValue);
+            data = rgba.fromYCbCr(raster, isNoData);
             break;
         case PhotometricInterpretations.CIELab:
-            data = rgba.fromCIELab(raster, transparentValue);
+            data = rgba.fromCIELab(raster, isNoData);
             break;
         default:
             throw new Error('Unsupported photometric interpretation.');

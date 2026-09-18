@@ -1,13 +1,16 @@
 import { TILE_SIZE } from '../constants';
+import { noDataTest } from '../noData';
 const renderTerrain = (data, { offset, scale, noData }) => {
     const pixels = TILE_SIZE * TILE_SIZE;
     const numBands = data.length / pixels;
     const rgba = new Uint8ClampedArray(pixels * 4);
     const base = -10000;
     const interval = 0.1;
+    const isNoData = noDataTest(noData, data);
     for (let i = 0; i < pixels; i++) {
-        const px = offset + data[i * numBands] * scale;
-        const h = Number.isFinite(px) && px !== noData ? px : 0;
+        const raw = data[i * numBands];
+        const px = offset + raw * scale;
+        const h = Number.isFinite(px) && !isNoData(raw) ? px : 0;
         const v = (h - base) / interval;
         rgba[4 * i] = Math.floor(v / 256 / 256) % 256;
         rgba[4 * i + 1] = Math.floor(v / 256) % 256;

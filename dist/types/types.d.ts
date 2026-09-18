@@ -21,6 +21,16 @@ export type TileIndex = {
     y: number;
 };
 export type Bbox = [number, number, number, number];
+/**
+ * The part of a tile that is actually covered by the COG, as a half-open rectangle of tile pixels:
+ * columns [left, right) and rows [top, bottom). Pixels outside it have no source pixel at all.
+ */
+export type TileCoverage = {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+};
 export type CogMetadata = {
     offset: number;
     scale: number;
@@ -28,6 +38,10 @@ export type CogMetadata = {
     photometricInterpretation?: number;
     bitsPerSample?: Array<number>;
     colorMap?: Array<number>;
+    /** Index of the sample holding alpha, when the COG declares one in ExtraSamples. */
+    alphaBand?: number;
+    /** Whether that alpha is associated (TIFF ExtraSamples 1), i.e. the colors are premultiplied. */
+    premultipliedAlpha?: boolean;
     artist?: string;
     bbox?: Bbox;
     images: Array<ImageMetadata>;
