@@ -58,8 +58,9 @@ raster workflow to MapLibre GL JS, which helps you:
 
 ## Live examples
 
-Interactive demos covering RGB imagery, color ramps, NDVI on a multiband Sentinel-2 image, GeoJSON
-masking, and a 12 GB digital elevation model covering Catalonia at 2 m/pixel:
+Interactive demos covering RGB imagery, an orthophoto with its own alpha band, color ramps, NDVI on
+a multiband Sentinel-2 image, GeoJSON masking, and a 12 GB digital elevation model covering
+Catalonia at 2 m/pixel:
 
 * [MapLibre COG Protocol demo page](https://labs.geomatico.es/maplibre-cog-protocol/) — all the examples in this repository, running live.
 * [Advanced sample viewer](https://labs.geomatico.es/maplibre-cog-protocol-examples/) — load and inspect your own COG URLs.
