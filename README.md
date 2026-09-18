@@ -617,13 +617,38 @@ As above, the value goes on the source, not in the warp:
 
 ```bash
 gdal_edit.py -a_nodata nan source.tif
-gdalwarp source.tif target.tiff -of COG -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=LERC -co MAX_Z_ERROR=0.1 -co RESAMPLING=BILINEAR -co OVERVIEW_RESAMPLING=AVERATE -co OVERVIEWS=IGNORE_EXISTING -co ADD_ALPHA=NO
+gdalwarp source.tif target.tiff -of COG -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=LERC -co MAX_Z_ERROR=0.1 -co RESAMPLING=BILINEAR -co OVERVIEW_RESAMPLING=AVERAGE -co OVERVIEWS=IGNORE_EXISTING -co ADD_ALPHA=NO
+```
+
+#### Aligning tiles to the tiling scheme, for huge COGs
+
+`TILING_SCHEME` only guarantees that the full-resolution image lines up with the tile grid; every
+overview level below it is typically offset by a fraction of a tile. That means one map tile at
+those levels has to be assembled from up to 4 neighbouring GeoTIFF blocks instead of read as one.
+For a small COG this is noise; for a COG spanning gigabytes, the extra round trips are the dominant
+cost of a tile load.
+
+`ALIGNED_LEVELS=N` aligns the top `N` resolution levels (the native resolution and the `N-1`
+overviews above it) to the tiling scheme, so a tile at those levels reads a single block. The cost
+is padding the image out to the nearest enclosing tile at the *coarsest* aligned level, but that
+padding is close to free: it's uniform `noData`, which compresses to almost nothing, and
+`SPARSE_OK=YES` drops all-`noData` blocks from the file entirely.
+
+Because the padding needed is a near-fixed number of pixels (set only by how far the source's
+origin sits from the tile grid), it barely grows as a *fraction* of a large file — but growth isn't
+smooth: it typically plateaus across several levels, then jumps once the padding has to reach a much
+coarser grid. Compare `gdalinfo <target>.tif | grep 'Size is'` for a couple of values of `N` before
+settling on one: cover at least the zoom your users open the map at, plus the levels a few pans and
+zooms will reach, and stop before the next jump.
+
+```bash
+gdalwarp source.tif target.tif -of COG -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=LERC -co ALIGNED_LEVELS=8 -co SPARSE_OK=YES -co OVERVIEWS=IGNORE_EXISTING
 ```
 
 #### Checking what a COG declares
 
 ```bash
-gdalinfo <target>.tif | grep -E 'NoData|Mask Flags'
+gdalinfo target.tif | grep -E 'NoData|Mask Flags'
 ```
 
 A COG with no `NoData Value`, no `Mask Flags: PER_DATASET` and no `ColorInterp=Alpha` band has no
