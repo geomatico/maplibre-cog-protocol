@@ -53,6 +53,34 @@ describe('renderColor', () => {
     expect(renderColor(data, baseOptions)[3]).toBe(0);
   });
 
+  test('out-of-range pixel is clamped to the end colour when isTransparent is not set', () => {
+    const data = new Uint8Array(PIXELS);
+    data[0] = 50; // above max: 10
+    const result = renderColor(data, baseOptions);
+    expect(result[3]).toBe(255);
+  });
+
+  test('out-of-range pixel is transparent when isTransparent is set', () => {
+    const data = new Uint8Array(PIXELS);
+    data[0] = 50; // above max: 10
+    const options = {...baseOptions, colorScale: {...baseOptions.colorScale, isTransparent: true}};
+    expect(renderColor(data, options)[3]).toBe(0);
+  });
+
+  test('below-range pixel is transparent when isTransparent is set', () => {
+    const data = new Int8Array(PIXELS);
+    data[0] = -5; // below min: 0
+    const options = {...baseOptions, colorScale: {...baseOptions.colorScale, isTransparent: true}};
+    expect(renderColor(data, options)[3]).toBe(0);
+  });
+
+  test('in-range pixel stays opaque when isTransparent is set', () => {
+    const data = new Uint8Array(PIXELS);
+    data[0] = 5; // within [0, 10]
+    const options = {...baseOptions, colorScale: {...baseOptions.colorScale, isTransparent: true}};
+    expect(renderColor(data, options)[3]).toBe(255);
+  });
+
   test('only the first band contributes to the colour for multi-band data', () => {
     const single = new Uint8Array(PIXELS);
     single[0] = 5;

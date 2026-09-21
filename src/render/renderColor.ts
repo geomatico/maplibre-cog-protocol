@@ -14,12 +14,13 @@ const renderColor: ImageRenderer<Options> = (
   const rgba = new Uint8ClampedArray(pixels * 4);
   const interpolate = colorScale(colorScaleParams);
   const isNoData = noDataTest(noData, data);
+  const {min, max, isTransparent} = colorScaleParams;
 
   for (let i = 0; i < pixels; i++) {
     const raw = data[i * numBands];
     const px = offset + raw * scale;
     // A value that is not finite cannot be placed on a color ramp, whatever the COG declares.
-    if (isNoData(raw) || !Number.isFinite(px)) {
+    if (isNoData(raw) || !Number.isFinite(px) || (isTransparent && (px < min || px > max))) {
       rgba[4 * i] = 0;
       rgba[4 * i + 1] = 0;
       rgba[4 * i + 2] = 0;
