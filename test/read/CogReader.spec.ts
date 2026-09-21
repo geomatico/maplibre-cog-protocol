@@ -327,6 +327,34 @@ describe('CogReader', () => {
     expect(readRasters).toHaveBeenCalledTimes(1);
   });
 
+  test('getRawTile does not cache a failed read, so a later request retries', async () => {
+    const readRasters = vi.fn()
+      .mockReturnValueOnce(Promise.reject(new Error('Request failed')))
+      .mockReturnValueOnce(Promise.resolve(fakeReadRasterResult));
+
+    mockedFromUrl.mockReturnValueOnce(Promise.resolve({
+      ...fakeGeoTIFF,
+      // @ts-expect-error partial mock
+      getImage: (index?: number) => Promise.resolve(index === 1 ? {...fakeOverview, readRasters} : fakeFirstImage),
+    }));
+
+    const reader = CogReader('flaky-tile.tif');
+    await expect(reader.getRawTile({z: 15, x: 16550, y: 12213})).rejects.toThrow('Request failed');
+
+    // Without eviction the rejected promise would be replayed for the full hour of maxAge.
+    await expect(reader.getRawTile({z: 15, x: 16550, y: 12213})).resolves.toEqual(fakeRawTile);
+    expect(readRasters).toHaveBeenCalledTimes(2);
+  });
+
+  test('a failed open is not cached, so a later request reopens the file', async () => {
+    mockedFromUrl.mockReturnValueOnce(Promise.reject(new Error('Request failed')));
+
+    await expect(CogReader('flaky-open.tif').getMetadata()).rejects.toThrow('Request failed');
+    await expect(CogReader('flaky-open.tif').getMetadata()).resolves.toBeDefined();
+
+    expect(mockedFromUrl).toHaveBeenCalledTimes(2);
+  });
+
   test('getRawTile with {mask: true} returns null when the COG has no mask images', async () => {
     // 'file.tif' metadata is already cached with no mask images (two non-mask images).
     const result = await CogReader('file.tif').getRawTile({z: 15, x: 16550, y: 12213}, {mask: true});

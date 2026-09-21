@@ -150,7 +150,8 @@ describe('cogProtocol', () => {
       min: 10,
       max: 20,
       isReverse: true,
-      isContinuous: true
+      isContinuous: true,
+      isTransparent: false
     }
 
     expect(mockedCogReader).toHaveBeenCalledWith('file.tif');
@@ -173,10 +174,34 @@ describe('cogProtocol', () => {
       min: 10,
       max: 20,
       isReverse: true,
-      isContinuous: true
+      isContinuous: true,
+      isTransparent: false
     }
 
     expect(mockedCogReader).toHaveBeenCalledWith('file.tif');
+    expect(mockedRenderColor).toHaveBeenCalledWith(fakeRawTile, {...fakeMetadata, colorScale: expectedColorScale});
+
+    const data: Uint8ClampedArray = response.data as unknown as Uint8ClampedArray;
+    expect(isEqualArray(data, fakeImageTile)).toBe(true);
+  });
+
+  test('image requests with the t modifier set isTransparent on the colour scale', async () => {
+
+    const response = await cogProtocol({
+      type: 'image',
+      url: 'cog://file.tif#color:scheme,10,20,ct/1/2/3'
+    });
+
+    const expectedColorScale = {
+      colorScheme: 'scheme',
+      customColors: [],
+      min: 10,
+      max: 20,
+      isReverse: false,
+      isContinuous: true,
+      isTransparent: true
+    }
+
     expect(mockedRenderColor).toHaveBeenCalledWith(fakeRawTile, {...fakeMetadata, colorScale: expectedColorScale});
 
     const data: Uint8ClampedArray = response.data as unknown as Uint8ClampedArray;

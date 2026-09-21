@@ -276,12 +276,14 @@ The syntax for the `#color` parameter is `#color:<colorScheme>,<minValue>,<maxVa
 * `<modifiers>`: Some characters representing additional configuration. We support:
   * `c` continuous color interpolation (vs discrete).
   * `-` reverse scale.
+  * `t` transparent out-of-range values. When enabled, values below `<minValue>` or above `<maxValue>` are rendered as transparent instead of clamped to the min/max colors of the ramp.
 
 Some examples:
 
 * Apply discrete `CartoEarth` ramp between 1 and 100: `#color:CartoEarth,1,100`
 * Apply continuous `BrewerYlOrRd7` ramp between -1 and 1: `#color:BrewerYlOrRd7,-1,1,c`
 * Same as above, reversed (so colors go red-orange-yellow instead of yellow-orange-red): `#color:CartoEarth,-1,1,c-`.
+* Apply continuous `BrewerSpectral9` ramp with transparent out-of-range values: `#color:BrewerSpectral9,1.7,1.8,ct`
 
 See other usages in [examples](examples). If you need more flexibility, use a Custom Color Function.
 
@@ -563,6 +565,8 @@ later call won't affect files already opened.
   image available.
 * **Caching**: opened files, their metadata and the decoded tiles are cached in memory, keyed by
   URL, and expire after an hour. Requesting a tile that is already cached issues no network request.
+  A failed open or read is not cached, so a transient failure (a dropped connection, an aborted
+  fetch) does not block retries for the rest of the hour.
 
 
 ## COG generation tips

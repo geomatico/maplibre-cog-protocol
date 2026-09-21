@@ -605,6 +605,7 @@ export type ColorScaleParams = {
   max: number;
   isReverse?: boolean;
   isContinuous?: boolean;
+  isTransparent?: boolean;
 };
 
 const colorScale = ({
