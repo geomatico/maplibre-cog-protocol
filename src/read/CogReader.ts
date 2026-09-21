@@ -25,6 +25,7 @@ let requestHeaders: Record<string, string> | undefined;
 
 const geoTiffCache = new QuickLRU<string, Promise<GeoTIFF>>({maxSize: 16, maxAge: ONE_HOUR_IN_MILLISECONDS});
 const metadataCache = new QuickLRU<string, Promise<CogMetadata>>({maxSize: 16, maxAge: ONE_HOUR_IN_MILLISECONDS});
+const imageCache = new QuickLRU<string, Promise<GeoTIFFImage>>({maxSize: 64, maxAge: ONE_HOUR_IN_MILLISECONDS});
 const tileCache = new QuickLRU<string, Promise<TypedArray>>({maxSize: 1024, maxAge: ONE_HOUR_IN_MILLISECONDS});
 
 /**
@@ -76,7 +77,28 @@ const CogReader = (url: string) => {
         blockSize: 65536, // batches/caches byte ranges to cut HTTP requests; 64 kb matches the future geotiff.js default
         ...(requestHeaders ? {headers: requestHeaders} : {}),
       };
-      return cacheWhileFulfilled(geoTiffCache, url, fromUrl(url, sourceOptions));
+      const openGeoTiff = async (): Promise<GeoTIFF> => {
+        const geoTiff = await fromUrl(url, sourceOptions);
+        geoTiff.cache = true; // will allow GeoTIFFImage to cache decoded blocks and reuse them across calls to readTileFast and readRasters
+        return geoTiff;
+      };
+      return cacheWhileFulfilled(geoTiffCache, url, openGeoTiff());
+    }
+  };
+
+  /**
+   * Reuses the same GeoTIFFImage per (url, imageIndex) across calls, so its own decoded-block cache
+   * (this.tiles, populated by getTileOrStrip — used by both readTileFast and the readRasters
+   * fallback) actually gets a chance to serve a later request, instead of starting empty on a fresh
+   * instance every time.
+   */
+  const getImage = (tiff: GeoTIFF, imageIndex: number): Promise<GeoTIFFImage> => {
+    const key = `${url}|${imageIndex}`;
+    const cachedImage = imageCache.get(key);
+    if (cachedImage) {
+      return cachedImage;
+    } else {
+      return cacheWhileFulfilled(imageCache, key, tiff.getImage(imageIndex));
     }
   };
 
@@ -86,7 +108,7 @@ const CogReader = (url: string) => {
       return cachedMetadata;
     } else {
       const tiff = await getGeoTiff(url);
-      const firstImage = await tiff.getImage();
+      const firstImage = await getImage(tiff, 0);
 
       const projectedCSType = firstImage.getGeoKeys()?.ProjectedCSTypeGeoKey;
       if (projectedCSType !== undefined && projectedCSType !== 3857 && projectedCSType !== 102113) {
@@ -108,7 +130,7 @@ const CogReader = (url: string) => {
       const imagesMetadata: Array<ImageMetadata> = [];
       const imageCount = await tiff.getImageCount();
       for (let index = 0; index < imageCount; index++) {
-        const image = await tiff.getImage(index);
+        const image = await getImage(tiff, index);
         const newSubFileType = (await image.fileDirectory.loadValue('NewSubfileType')) ?? 0;
         const zoom = zoomFromResolution(image.getResolution(firstImage)[0]);
         const isOverview = !!(newSubFileType & 1);
@@ -189,8 +211,8 @@ const CogReader = (url: string) => {
     if (imageIndex === null) return {left: 0, top: 0, right: 0, bottom: 0};
 
     const tiff = await getGeoTiff(url);
-    const firstImage = await tiff.getImage(0);
-    const selectedImage = await tiff.getImage(imageIndex);
+    const firstImage = await getImage(tiff, 0);
+    const selectedImage = await getImage(tiff, imageIndex);
 
     const window = tileIndexToPixelWindow(
       {x, y, z},
@@ -248,8 +270,8 @@ const CogReader = (url: string) => {
     if (imageIndex === null) return null; // only reachable when mask=true and COG has no mask band
 
     const tiff = await getGeoTiff(url);
-    const firstImage = await tiff.getImage(0);
-    const selectedImage = await tiff.getImage(imageIndex);
+    const firstImage = await getImage(tiff, 0);
+    const selectedImage = await getImage(tiff, imageIndex);
 
     const window = tileIndexToPixelWindow(
       {x, y, z},

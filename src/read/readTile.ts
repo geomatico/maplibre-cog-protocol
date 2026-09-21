@@ -177,8 +177,7 @@ export const readTileFast = async (
     else runs.push({block, source: columnOffsets[x], column: x, length: 1});
   }
 
-  // Decode the blocks the window touches. geotiff.js caches them, so neighbouring tiles reading
-  // the same block only pay for it once, and the pool keeps the decoding off this thread.
+  // Decode the blocks the window touches
   const blockColumns = new Set(Array.from(columnBlocks).filter((block) => block !== -1));
   const blockRows = new Set<number>();
   for (const row of rows) {

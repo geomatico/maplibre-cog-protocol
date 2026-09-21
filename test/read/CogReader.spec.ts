@@ -327,6 +327,23 @@ describe('CogReader', () => {
     expect(readRasters).toHaveBeenCalledTimes(1);
   });
 
+  test('getRawTile reuses the same GeoTIFFImage across different tiles of the same image', async () => {
+    const getImage = vi.fn((index?: number) => Promise.resolve(index === 1 ? fakeOverview : fakeFirstImage));
+    mockedFromUrl.mockReturnValueOnce(Promise.resolve({
+      ...fakeGeoTIFF,
+      // @ts-expect-error partial mock
+      getImage,
+    }));
+
+    // Two different, non-overlapping tiles: tileCache can't skip readRasters for either, but both
+    // fall in the same overview image, so getImage(1) should only be resolved once for the pair.
+    const reader = CogReader('image-cache.tif');
+    await reader.getRawTile({z: 15, x: 16550, y: 12213});
+    await reader.getRawTile({z: 15, x: 16551, y: 12213});
+
+    expect(getImage.mock.calls.filter(([index]) => index === 1)).toHaveLength(1);
+  });
+
   test('getRawTile does not cache a failed read, so a later request retries', async () => {
     const readRasters = vi.fn()
       .mockReturnValueOnce(Promise.reject(new Error('Request failed')))

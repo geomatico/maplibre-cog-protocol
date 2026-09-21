@@ -566,7 +566,9 @@ later call won't affect files already opened.
 * **Caching**: opened files, their metadata and the decoded tiles are cached in memory, keyed by
   URL, and expire after an hour. Requesting a tile that is already cached issues no network request.
   A failed open or read is not cached, so a transient failure (a dropped connection, an aborted
-  fetch) does not block retries for the rest of the hour.
+  fetch) does not block retries for the rest of the hour. When a COG's tiling scheme doesn't line up
+  with the map's own grid, neighbouring map tiles can straddle the same source block — that decoded
+  block is also cached and reused, instead of being decoded again for every tile that touches it.
 
 
 ## COG generation tips
