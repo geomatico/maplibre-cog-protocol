@@ -4,6 +4,7 @@ import locationValues from './read/locationValues';
 import {colorScale, colorSchemeNames} from './render/colorScale';
 import setColorFunction from './render/custom/setColorFunction';
 import {clearMask, setMask} from './render/mask';
+import {registerProjection} from './reproject/projections';
 
 export {
   clearMask,
@@ -12,6 +13,7 @@ export {
   colorSchemeNames,
   getCogMetadata,
   locationValues,
+  registerProjection,
   setColorFunction,
   setMask,
   setRequestHeaders,

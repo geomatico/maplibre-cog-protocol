@@ -12,7 +12,13 @@ const clearAlpha = (rgba: Uint8ClampedArray, row: number, fromColumn: number, to
  * just the fillValue the reader asked geotiff.js for, which for integer rasters is a value like
  * any other. Coverage is geometry, so it applies whatever the COG declares as noData.
  */
-export const applyCoverage = (rgba: Uint8ClampedArray, {left, top, right, bottom}: TileCoverage): void => {
+export const applyCoverage = (rgba: Uint8ClampedArray, {left, top, right, bottom, footprint}: TileCoverage): void => {
+  if (footprint) {
+    for (let i = 0; i < footprint.length; i++) {
+      if (footprint[i] === 0) rgba[i * 4 + 3] = 0;
+    }
+  }
+
   if (left <= 0 && top <= 0 && right >= TILE_SIZE && bottom >= TILE_SIZE) return; // fully covered
 
   for (let row = 0; row < TILE_SIZE; row++) {

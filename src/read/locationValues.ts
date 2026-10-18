@@ -20,9 +20,12 @@ const locationValues = async (url: string, {latitude, longitude}: Location, zoom
   const numBands = tile.length / pixels;
   const nothing = () => new Array(numBands).fill(NaN);
 
-  const {left, top, right, bottom} = await cog.getTileCoverage(tileIndex);
+  const {left, top, right, bottom, footprint} = await cog.getTileCoverage(tileIndex);
   if (column < left || column >= right || row < top || row >= bottom) {
     return nothing(); // outside the image: no data was read, just a fill value
+  }
+  if (footprint && footprint[row * TILE_SIZE + column] === 0) {
+    return nothing(); // reprojected COG: this pixel of the tile has no source pixel
   }
 
   if (isMaskedOut([longitude, latitude], tileIndex)) {

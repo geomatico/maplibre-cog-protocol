@@ -33,6 +33,11 @@ export type TileCoverage = {
   top: number;
   right: number;
   bottom: number;
+  /**
+   * Only for COGs that had to be reprojected, whose border is not aligned with the tile grid: one
+   * entry per tile pixel (row by row), 1 if it has a source pixel and 0 if not.
+   */
+  footprint?: Uint8Array;
 };
 
 export type CogMetadata = {
@@ -47,6 +52,8 @@ export type CogMetadata = {
   /** Whether that alpha is associated (TIFF ExtraSamples 1), i.e. the colors are premultiplied. */
   premultipliedAlpha?: boolean;
   artist?: string;
+  /** CRS of the COG, such as "EPSG:29902", when it is not Web Mercator and gets reprojected. */
+  crs?: string;
   bbox?: Bbox;
   images: Array<ImageMetadata>;
 };

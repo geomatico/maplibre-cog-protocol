@@ -33,9 +33,11 @@
   },
   "author": "Geomatico <info@geomatico.es>",
   "dependencies": {
+    "@developmentseed/raster-reproject": "^0.8.1",
     "@mapbox/sphericalmercator": "^2.0.2",
     "d3-scale": "^4.0.2",
     "geotiff": "^3.0.5",
+    "proj4": "^2.22.0",
     "quick-lru": "^7.1.0"
   },
   "peerDependencies": {

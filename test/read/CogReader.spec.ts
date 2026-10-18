@@ -160,14 +160,14 @@ describe('CogReader', () => {
 
   });
 
-  test('getMetadata throws for non-Mercator projections', async () => {
+  test('getMetadata throws for projections that are neither Mercator nor registered', async () => {
     mockedFromUrl.mockReturnValueOnce(Promise.resolve({
       ...fakeGeoTIFF,
       getImage: () => Promise.resolve({...fakeFirstImage, getGeoKeys: () => ({ProjectedCSTypeGeoKey: 32636})}),
     } as any));
 
     await expect(CogReader('utm.tif').getMetadata())
-      .rejects.toThrow('EPSG:32636 in utm.tif is not supported');
+      .rejects.toThrow('EPSG:32636 in utm.tif is not known. Register it with registerProjection(32636');
   });
 
   test('getTilejson returns a standard TileJSON document describing GeoTIFF as a data source', async () => {

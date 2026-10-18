@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Maplibre COG Protocol Example: reprojection</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@^6.0.0/dist/maplibre-gl.css">
+  <script src="dist/index.js"></script>
+  <style>
+      html, body, #map {
+          margin: 0;
+          width: 100%;
+          height: 100%;
+      }
+
+      #note {
+          position: absolute;
+          top: 8px;
+          left: 8px;
+          max-width: 320px;
+          background: #ffffffe6;
+          padding: 8px 10px;
+          border-radius: 5px;
+          font: 13px/1.4 sans-serif;
+      }
+  </style>
+</head>
+<body>
+<div id="map"></div>
+<div id="note">
+  This COG is in <b>EPSG:29902</b> (TM65 / Irish Grid), not Web Mercator, and is reprojected on the fly.
+  The blue grid is the Irish Grid (5 km lines); the red cross marks Belfast City Hall.
+</div>
+<script type="module">
+  import * as maplibregl from 'https://unpkg.com/maplibre-gl@^6.0.0/dist/maplibre-gl.mjs';
+
+  const map = new maplibregl.Map({
+    container: 'map',
+    style: 'https://tiles.openfreemap.org/styles/liberty',
+    center: [-5.93021, 54.59661],
+    zoom: 11.5,
+    hash: true
+  });
+
+  maplibregl.addProtocol('cog', MaplibreCOGProtocol.cogProtocol);
+
+  // EPSG:29902 and EPSG:2157 (Irish Transverse Mercator) are built in. Any other CRS can be taught with:
+  // MaplibreCOGProtocol.registerProjection(27700, '+proj=tmerc ... +towgs84=... +units=m +no_defs');
+
+  map.on('load', () => {
+    map.addSource('irishGrid', {
+      type: 'raster',
+      url: 'cog://./data/irish-grid.tif',
+      tileSize: 256
+    });
+
+    map.addLayer({
+      id: 'irishGridLayer',
+      source: 'irishGrid',
+      type: 'raster'
+    });
+  });
+</script>
+</body>
+</html>

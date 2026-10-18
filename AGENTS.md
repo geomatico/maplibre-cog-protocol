@@ -9,8 +9,9 @@ Cloud Optimized GeoTIFF can be used directly as a `raster` or `raster-dem` sourc
 server. The library fetches byte ranges of the remote GeoTIFF, decodes the pixels for the requested
 XYZ tile, converts them to RGBA, and hands MapLibre an `ImageBitmap`.
 
-Hard constraint: **COGs must be in EPSG:3857 (Web Mercator)**. There is no reprojection; a COG with
-any other `ProjectedCSTypeGeoKey` throws in `getMetadata`.
+COGs in EPSG:3857 (Web Mercator) are read directly. COGs in another CRS are reprojected per tile
+(`src/reproject/`) if the CRS is in the proj4 registry (`reproject/projections.ts`, extendable by
+users with `registerProjection`); a CRS that is not registered throws in `getMetadata`.
 
 ## Commands
 
@@ -47,6 +48,13 @@ Request flow for one tile (`src/cogProtocol.ts` is the entry point and the only 
 2. MapLibre then asks for `cog://<url>#<hash>/{z}/{x}/{y}` with `type: 'image'` → `renderTile()`
    parses the URL, reads raw pixels + the optional mask band, picks a renderer from the hash, and
    returns an `ImageBitmap`.
+
+Reprojection (`src/reproject/`) only touches `CogReader`: for a non-Mercator COG, `getRawTile` builds a
+`TileMapping` (a `@developmentseed/raster-reproject` mesh over the *tile*, rasterized into per-pixel
+positions in the COG's extent), reads the source window it needs, and `sampleTile`s it into a normal
+256×256 raster, so `render/` is unaware. Image zooms in the metadata are the Web Mercator equivalent
+(`effectiveZoom`), so overview selection is unchanged. The non-rectangular COG border is delivered
+as `TileCoverage.footprint`, applied by `applyCoverage`.
 
 Two layers under `src/`:
 
@@ -91,6 +99,8 @@ the bare COG URL without the `cog://` prefix.
 - Per-pixel loops in `render/` are the hot path (called for every pixel of every tile). Keep them
   allocation-free and branch-light; existing code deliberately indexes flat typed arrays rather
   than building objects.
-- Tests mock `geotiff` with `vi.mock` and hand-built fake image objects; there are no fixture
-  `.tif` files in `test/`. Test layout mirrors `src/`.
+- Tests mock `geotiff` with `vi.mock` and hand-built fake image objects. The exception is
+  `test/reproject/*.e2e.spec.ts`, which reads the real COG `test/data/irish-grid-xy.tif` (EPSG:29902,
+  band values = the pixel's own easting/northing) through a local range-request server, so that
+  reprojected pixels can be checked against exact coordinates. Test layout mirrors `src/`.
 - Public API changes need a `README.md` update, and breaking ones an entry in `MIGRATIONS.md`.

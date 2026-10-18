@@ -47,4 +47,20 @@ describe('applyCoverage', () => {
     expect(rgba.filter((_, i) => i % 4 === 3).every(value => value === 0)).toBe(true);
   });
 
+
+  test('makes transparent the pixels a footprint marks as having no source pixel', () => {
+    const rgba = opaqueTile();
+    const footprint = new Uint8Array(256 * 256).fill(1);
+    footprint[5 * 256 + 7] = 0; // row 5, column 7
+    footprint[200 * 256 + 255] = 0;
+
+    // The rectangle is the whole tile, as for COGs that are reprojected: the footprint tells the rest
+    applyCoverage(rgba, {left: 0, top: 0, right: 256, bottom: 256, footprint});
+
+    expect(alpha(rgba, 7, 5)).toBe(0);
+    expect(alpha(rgba, 255, 200)).toBe(0);
+    expect(alpha(rgba, 8, 5)).toBe(255);
+    expect(alpha(rgba, 0, 0)).toBe(255);
+    expect(rgba.filter((_, i) => i % 4 === 3 && rgba[i] === 0).length).toBe(2);
+  });
 });

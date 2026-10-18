@@ -43,6 +43,26 @@ const arrayTypeFor = (image: GeoTIFFImage): TypedArrayConstructor | undefined =>
   return ARRAY_TYPES[sampleFormat]?.[bitsPerSample];
 };
 
+/**
+ * A raster of the type geotiff.js would read this image into, filled with `fillValue`. For tiles
+ * that need no read at all, so that they still match the type of the ones that do.
+ */
+export const emptyRaster = (image: GeoTIFFImage, length: number, fillValue: number): TypedArray => {
+  const bitsPerSample = image.getBitsPerSample(0);
+  const sampleFormat = image.getSampleFormat(0);
+  const Fallback: TypedArrayConstructor =
+    sampleFormat === 3
+      ? bitsPerSample > 32
+        ? Float64Array
+        : Float32Array
+      : (sampleFormat === 2 ? [Int8Array, Int16Array, Int32Array] : [Uint8Array, Uint16Array, Uint32Array])[
+          bitsPerSample <= 8 ? 0 : bitsPerSample <= 16 ? 1 : 2
+        ];
+  const raster = new (arrayTypeFor(image) ?? Fallback)(length);
+  if (fillValue) raster.fill(fillValue);
+  return raster;
+};
+
 // Compressions whose decoder geotiff.js can build from public TIFF tags: no compression, LZW,
 // JPEG, Deflate, PackBits, ZSTD, LERC and WebP. Each of the last three needs one extra tag or
 // value, added in bindDecoder below; every other compression is left to readRasters.

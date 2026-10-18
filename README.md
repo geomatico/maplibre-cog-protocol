@@ -482,6 +482,45 @@ clearMask();     // remove mask
 See [masking example](examples/masking.html) for a full working demo.
 
 
+### Reprojection
+
+COGs that are not in EPSG:3857 are reprojected tile by tile in the browser: nothing needs to be preprocessed.
+
+```
+map.addSource('sourceId', {
+  type: 'raster',
+  url: 'cog://https://example.com/data/irish-grid.tif', // a COG in EPSG:29902
+  tileSize: 256
+});
+```
+
+Built-in CRSs: EPSG:29902 (TM65 / Irish Grid), EPSG:2157 (Irish Transverse Mercator) and EPSG:4326 (WGS84 longitude/latitude).
+Use `registerProjection(epsgCode, definition)` to teach the library any other CRS, with a
+[proj4](https://github.com/proj4js/proj4js) or WKT definition, **before** the COG is first requested.
+Include the datum shift (`+towgs84`) the CRS needs, or the result will be misplaced by the difference between the datums:
+
+```
+import {registerProjection} from '@geomatico/maplibre-cog-protocol';
+
+registerProjection(27700, '+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy +towgs84=446.448,-125.157,542.06,0.15,0.247,0.842,-20.489 +units=m +no_defs');
+```
+
+A COG in a CRS that is unknown to the library throws an error saying so. Some things to know:
+
+- The mapping from tile pixels to the COG's pixels uses the triangle meshing of
+  [`@developmentseed/raster-reproject`](https://github.com/developmentseed/deck.gl-raster/tree/main/packages/raster-reproject)
+  (the same used by deck.gl-raster), accurate to a fraction of a tile pixel.
+- Resampling is nearest neighbour, as for COGs in Web Mercator. Overview selection accounts for the
+  scale of Web Mercator at the COG's latitude, so overviews are picked as you would expect.
+- Accuracy is limited by the datum transformation. For the Irish Grid this is the 7-parameter Helmert
+  transformation EPSG recommends, accurate to about 1 m. Grid-based transformations are not supported.
+- Rotated or sheared COGs, and COGs whose CRS is not identified by an EPSG code, are not supported.
+- COGs that only declare a geographic CRS (GeographicTypeGeoKey) used to be read as if they were in
+  Web Mercator, and drawn in the wrong place. They are now reprojected when the CRS is known, and fail otherwise.
+- `locationValues` and `getCogMetadata` (which reports the `crs`) work with reprojected COGs too.
+
+See the [reprojection example](https://github.com/geomatico/maplibre-cog-protocol/blob/main/examples/reprojection.html).
+
 ### [unstable] Get COG metadata
 
 Use the `getCogMetadata(url)` to obtain metadata about a COG file. It returns a promise resolving to:
@@ -573,7 +612,8 @@ later call won't affect files already opened.
 
 ## COG generation tips
 
-COG should be in EPSG:3857 (Google Mercator) projection, as this library doesn't reproject and won't understand any other projection.
+COGs in EPSG:3857 (Web Mercator) are the fastest, as their pixels need no conversion. COGs in other
+projections are [reprojected on the fly](#reprojection) when they are in a CRS the library knows.
 
 For better performance, use the Google Maps tiling scheme with 256x256 blocksize.
 
